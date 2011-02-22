@@ -43,6 +43,19 @@ object JenaConnectionSpec extends Specification with Timer with SimpleConvertion
 
       }
 
+
+      Jena.sdbModel(jenaConnection, "http://vitro.mannlib.cornell.edu/default/vitro-kb-2") {
+        dbModel =>
+          println("------------------------------------\ndbModel:")
+          QueryRunner.run(dbModel)
+          println("------------------------------------\nMemory Model:")
+          var model = ModelFactory.createDefaultModel
+          timer("loading memory model: ") {
+            model.add(dbModel)
+          }
+          QueryRunner.run(model)
+      }
+
     } tag ("focus")
 
   } tag ("focus")
