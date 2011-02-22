@@ -5,6 +5,7 @@ import org.specs._
 
 import org.scardf.jena.JenaGraph
 import org.scardf._
+import org.scardf.Node
 import org.scardf.NodeConverter._
 
 import edu.duke.oit.jena.utils._
@@ -56,6 +57,18 @@ object JenaConnectionSpec extends Specification with Timer with SimpleConvertion
           QueryRunner.run(model)
       }
 
+      println("------------------------------------\nMemory Model (disconnect from db):")
+      var tModel = ModelFactory.createDefaultModel
+      Jena.sdbModel(jenaConnection, "http://vitro.mannlib.cornell.edu/default/vitro-kb-2") {
+        dbModel =>
+          timer("loading memory model: ") {
+            tModel.add(dbModel)
+          }
+      }
+      println("sleeping...")
+      Thread.sleep(10000)
+      QueryRunner.run(tModel)
+
     } tag ("focus")
 
   } tag ("focus")
@@ -102,7 +115,7 @@ object QueryRunner extends SimpleConvertion with Timer {
   }
 
   def queryTimerDefault(graph: JenaGraph, query: String, label: String): Int = {
-    queryTimer(graph, query, label, (row: Map[QVar, Node]) => { 
+    queryTimer(graph, query, label, (row: Map[QVar, Node]) => {
       var c = (getString(row('x)) + " / " + getString(row('y)) + " / " + getString(row('y)))
     })
   }

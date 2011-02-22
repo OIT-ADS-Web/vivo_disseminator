@@ -37,14 +37,16 @@ object Jena {
   }
 
 
-
-
   // SDB methods
 
+  // might want to make these configurable globally
   val layoutType = "layout2/hash"
-  val dbType = "MySQL"
-  
-  def storeDesc:StoreDesc = new StoreDesc(LayoutType.fetch(layoutType), DatabaseType.fetch(dbType))
+  val defaultDbType = "MySQL"
+
+  def storeDesc(dbType: Option[String] = None): StoreDesc = {
+    val dt = dbType.getOrElse(defaultDbType)
+    new StoreDesc(LayoutType.fetch(layoutType), DatabaseType.fetch(dt))
+  }
 
   def connectionSDB(cInfo: JenaConnectionInfo)(mFactory: (SDBConnection) => Unit) = {
     val sdbConnection = new SDBConnection(cInfo.url, cInfo.user, cInfo.password)
@@ -57,18 +59,17 @@ object Jena {
   }
 
 
-
   def sdbStore(cInfo: JenaConnectionInfo)(mFactory: (Store) => Unit) = {
     connectionSDB(cInfo) {
       sdbConnection =>
-        val graph: Graph = SDBFactory.connectDefaultGraph(storeDesc)
-        mFactory(SDBFactory.connectStore(sdbConnection, storeDesc))
+        val graph: Graph = SDBFactory.connectDefaultGraph(storeDesc(Some(cInfo.dbType)))
+        mFactory(SDBFactory.connectStore(sdbConnection, storeDesc(Some(cInfo.dbType))))
     }
   }
 
   def sdbModel(cInfo: JenaConnectionInfo, modelUri: String)(mFactory: (JModel) => Unit) = {
-    sdbStore(cInfo) { store =>
-        //val graph: Graph = SDBFactory.connectDefaultGraph(store)
+    sdbStore(cInfo) {
+      store =>
         mFactory(SDBFactory.connectNamedModel(store, modelUri))
     }
   }
@@ -76,12 +77,9 @@ object Jena {
   def sdbDefaultModel(cInfo: JenaConnectionInfo)(mFactory: (JModel) => Unit) = {
     sdbStore(cInfo) {
       store =>
-      mFactory(SDBFactory.connectDefaultModel(store))
+        mFactory(SDBFactory.connectDefaultModel(store))
     }
   }
-
-
-
 
 
   // ontogoly methods
