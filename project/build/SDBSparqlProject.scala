@@ -28,7 +28,8 @@ class SDBSparqlProject(info: ProjectInfo) extends DefaultProject(info) {
     "org.scala-tools.testing" %% "specs" % "1.6.8-SNAPSHOT" % "test->default",
     "commons-logging" % "commons-logging" % "1.1.1",
     "com.hp.hpl.jena" % "sdb" % "1.3.3",
-    "joda-time" % "joda-time" % "1.6"
+    "joda-time" % "joda-time" % "1.6",
+    "com.hp.hpl.jena" % "tdb" % "0.8.8"
   ) ++ super.libraryDependencies
 
 }

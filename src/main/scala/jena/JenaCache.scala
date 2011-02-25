@@ -6,6 +6,7 @@ import scala.actors.Actor._
 import com.hp.hpl.jena.rdf.model.{Model => JModel, ModelFactory}
 import edu.duke.oit.jena.connection._
 import org.scardf.jena.JenaGraph
+import com.hp.hpl.jena.tdb.TDBFactory
 
 case object Graph
 
@@ -35,7 +36,7 @@ object JenaCache {
   def setFromDatabase(cInfo: JenaConnectionInfo, modelUri: String) {
     Jena.sdbModel(cInfo, modelUri) {
       dbModel =>
-        var model = ModelFactory.createDefaultModel
+        var model = TDBFactory.createModel // ModelFactory.createDefaultModel
         model.add(dbModel)
         setModel(model)
     }
