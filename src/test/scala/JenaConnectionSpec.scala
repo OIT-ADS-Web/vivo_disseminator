@@ -10,6 +10,7 @@ import org.scardf.NodeConverter._
 
 import edu.duke.oit.jena.utils._
 import edu.duke.oit.jena.connection._
+import edu.duke.oit.jena.actor.JenaCache
 
 object JenaConnectionSpec extends Specification with Timer with SimpleConvertion {
 
@@ -69,6 +70,30 @@ object JenaConnectionSpec extends Specification with Timer with SimpleConvertion
       Thread.sleep(10000)
       QueryRunner.run(tModel)
 
+    } //tag ("focus")
+
+    "use Jena cache" in {
+      JenaCache.setFromDatabase(jenaConnection, "http://vitro.mannlib.cornell.edu/default/vitro-kb-2")
+      timer("results 1") {
+        val results = JenaCache.queryModel(QueryRunner.queryString3)
+        println(" r: " + results.size)
+      }
+      timer("results 2") {
+        val results2 = JenaCache.queryModel(QueryRunner.queryString3)
+        println("r2: " + results2.size)
+      }
+      timer("results 3") {
+        val results2 = JenaCache.queryModel(QueryRunner.queryString2)
+        println("r3: " + results2.size)
+      }
+      for (i <- 1 to 10) {
+        timer("results 4") {
+          val results2 = JenaCache.queryModel(QueryRunner.queryString3)
+          println("r4: " + results2.size)
+        }
+      }
+
+
     } tag ("focus")
 
   } tag ("focus")
@@ -96,11 +121,11 @@ trait SimpleConvertion {
 object QueryRunner extends SimpleConvertion with Timer {
 
   def run(dbModel: JModel) = {
-    var model = ModelFactory.createDefaultModel
-    model.add(dbModel)
+    //var model = ModelFactory.createDefaultModel
+    //model.add(dbModel)
     //var model = dbModel
 
-    var jg = new JenaGraph(model)
+    var jg = new JenaGraph(dbModel)
     runMultipleTimes(jg, queryString, "query 1 /", 3)
     runMultipleTimes(jg, queryString2, "query 2 /", 3)
     runMultipleTimes(jg, queryString3, "query 3 /", 3)
