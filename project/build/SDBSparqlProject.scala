@@ -31,7 +31,8 @@ class SDBSparqlProject(info: ProjectInfo) extends DefaultProject(info) {
     "joda-time" % "joda-time" % "1.6",
     "com.hp.hpl.jena" % "tdb" % "0.8.8",
     "org.apache.solr" % "solr-core" % "1.4.1",
-    "org.apache.solr" % "solr-solrj" % "1.4.1"
+    "org.apache.solr" % "solr-solrj" % "1.4.1",
+    "javax.servlet" % "servlet-api" % "2.5"
   ) ++ super.libraryDependencies
 
 }

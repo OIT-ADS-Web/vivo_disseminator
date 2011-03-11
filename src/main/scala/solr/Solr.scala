@@ -10,7 +10,7 @@ import java.io.File
 class SolrConfig(val file: String, val directory: String, val coreName: String)
 
 object Solr {
-  
+
   def solrServer(solrConfig: SolrConfig):SolrServer = {
     val configFile = new File( solrConfig.file )
     val container = new CoreContainer
@@ -20,16 +20,3 @@ object Solr {
   }
 
 }
-
-import org.apache.solr.client.solrj.beans.Field
-
-class Person {
-
-  @Field
-  var uri:String = _
-
-  @Field
-  var pubsJson:String = _
-
-}
-
