@@ -29,7 +29,9 @@ class SDBSparqlProject(info: ProjectInfo) extends DefaultProject(info) {
     "commons-logging" % "commons-logging" % "1.1.1",
     "com.hp.hpl.jena" % "sdb" % "1.3.3",
     "joda-time" % "joda-time" % "1.6",
-    "com.hp.hpl.jena" % "tdb" % "0.8.8"
+    "com.hp.hpl.jena" % "tdb" % "0.8.8",
+    "org.apache.solr" % "solr-core" % "1.4.1",
+    "org.apache.solr" % "solr-solrj" % "1.4.1"
   ) ++ super.libraryDependencies
 
 }
