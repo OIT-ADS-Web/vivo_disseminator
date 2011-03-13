@@ -1,6 +1,12 @@
-target/
+BBBtarget/
 lib_managed/
 src_managed/
 project/boot/
 .idea/
 *.iml
+solr/vivowidgetcore/data*
+outtenr*
+project/build/target/*
+sqlnet.log
+target*
+.ensime
