@@ -90,3 +90,27 @@ class SolrExtractionSpec extends Specification {
     }
   """
 }
+ 
+// "
+class SolrJsonProducingSpec extends Specification {
+  import edu.duke.oit.vw.solr._
+
+  "Produce json for extraItems" in {
+    val ei = new ExtraItems(Option(Map("a" -> "b", "c" -> "d")))
+    ei.jsonString must_== """{"extraItems":{"a":"b","c":"d"}}"""
+  }
+
+  "Produce publication json" in {
+    val pub = Publication("http:/vivo.duke.edu/person1",
+                          "http://xmlns.com/foaf/0.1/Person",
+                          "2005",
+                          List("Smith J"),
+                          Option(Map("issue" -> "13")))
+    pub.jsonString must_== """{"uri":"http:/vivo.duke.edu/person1","vivoType":"http://xmlns.com/foaf/0.1/Person","year":"2005","authors":["Smith J"],"extraItems":{"issue":"13"}}"""
+    // import net.liftweb.json.{JsonAST,Printer,Extraction,Merge}
+    // implicit val formats = net.liftweb.json.DefaultFormats
+    // println("implicit: ")
+    // println(Printer.compact(JsonAST.render(Extraction.decompose(pub))))
+
+  }
+}

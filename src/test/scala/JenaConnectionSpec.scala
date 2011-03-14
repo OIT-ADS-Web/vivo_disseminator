@@ -149,6 +149,9 @@ object QueryRunner extends SimpleConvertion with Timer {
     var count = 0
     timer(label) {
       var a = graph.select(query)
+      println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+      println(a.getClass)
+      println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
       count = a.size
       for (r <- a) {
         fun(r)
