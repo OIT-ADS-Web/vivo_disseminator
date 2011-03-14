@@ -33,7 +33,7 @@ class SDBSparqlProject(info: ProjectInfo) extends DefaultProject(info) {
     // "org.scala-tools.testing" % "specs" % "1.6.1-2.8.0.Beta1-RC6",
 
     // didn't need this for some reason
-    // "javax.servlet" % "servlet-api" % "2.5", 
+     "javax.servlet" % "servlet-api" % "2.5", 
 
     // scala libraries
     "org.scala-tools.testing" %% "specs" % "1.6.8-SNAPSHOT" % "test->default", 

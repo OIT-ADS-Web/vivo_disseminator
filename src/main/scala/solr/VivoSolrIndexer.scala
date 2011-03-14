@@ -1,10 +1,13 @@
 package edu.duke.oit.vw.solr
 
+import org.apache.solr.client.solrj.SolrServer
+import org.apache.solr.common.SolrInputDocument
+
 import edu.duke.oit.jena.connection._
 import edu.duke.oit.jena.actor.JenaCache
 
-object Vivo {
-  def initializeJenaCache(url: String, user: String, password: String, dbType: String, driver: String) = {
+class Vivo(url: String, user: String, password: String, dbType: String, driver: String) {
+  def initializeJenaCache() = {
     Class.forName(driver)
     JenaCache.setFromDatabase(new JenaConnectionInfo(url,user,password,dbType),
                               "http://vitro.mannlib.cornell.edu/default/vitro-kb-2")
@@ -41,30 +44,26 @@ object Vivo {
   """
 }
 
-object VivoSolrIndexer {
-  // get people uris - pass each to PersonIndexer
-  //TODO : pass in solr server
+class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
   def indexPeople() = {
-   // TODO: remove next line, and only use Vivo.select - hardcoding now for dev purposes 
-    Vivo.initializeJenaCache("jdbc:mysql://localhost:3306/vitrodb","root","","MySQL","com.mysql.jdbc.Driver")
-    val peopleUris = Vivo.select(Vivo.sparqlPrefixes + """
+   // TODO: remove next line, and only use vivo.select - hardcoding now for dev purposes 
+   // vivo.select should have cached/live argument and vivo instance should know whether to init or not
+    vivo.initializeJenaCache()
+    val peopleUris = vivo.select(vivo.sparqlPrefixes + """
       select ?person where { ?person rdf:type core:FacultyMember }
       """).map(_('person))
     println("people uris: " + peopleUris)
     for (p <- peopleUris) {
-      PersonIndexer.index(p.toString)
+      PersonIndexer.index(p.toString,vivo,solr)
     }
   }
 
 }
 
 object PersonIndexer {
-// get base person data - create or update index document
-// get publication uris - pass each to PublicationIndexer
 
-  def index(uri: String) = {
-    // TODO: once again Vivo object used directly - pass in?
-    val personData = Vivo.select(Vivo.sparqlPrefixes + """
+  def index(uri: String,vivo: Vivo,solr: SolrServer) = {
+    val personData = vivo.select(vivo.sparqlPrefixes + """
       SELECT distinct ?name ?title
       WHERE{
         """+uri+""" rdf:type core:FacultyMember .
@@ -74,12 +73,41 @@ object PersonIndexer {
     """)
     println("data for " + uri + ":" + personData)
 
+    val publicationData = vivo.select(vivo.sparqlPrefixes + """
+      select *
+      where {
+        """+uri+""" core:authorInAuthorship ?authorship .
+        ?publication core:informationResourceInAuthorship ?authorship .
+        ?publication rdfs:label ?title .
+        OPTIONAL { ?publication bibo:numPages ?numPages . }
+        OPTIONAL { ?publication bibo:edition ?edition . }
+        OPTIONAL { ?publication bibo:volume ?volume . }
+        OPTIONAL { ?publication bibo:year ?year . }
+        OPTIONAL { ?publication bibo:issue ?issue . }
+        OPTIONAL { ?publication core:hasPublicationVenue ?publicationVenue . ?publicationVenue rdfs:label ?publishedIn . }
+        OPTIONAL { ?publication core:publisher ?publisher. ?publisher rdfs:label ?publishedBy . }
+        OPTIONAL { ?publication bibo:pageStart ?startPage .}
+        OPTIONAL { ?publication bibo:pageEnd ?endPage }
+      }
+    """)
+    println("pubData for " + uri + ": " + publicationData)
+
+   // grab uri's - get author data
+   val publicationURIs = publicationData.map(_('publication))
+   println("pub URIs: " + publicationURIs)
+   for(pubURI <- publicationURIs) {
+     val p = vivo.select(vivo.sparqlPrefixes + """
+      select ?authorName ?rank
+      where {
+        """+pubURI+""" core:informationResourceInAuthorship ?authorship .
+        ?authorship core:linkedAuthor ?author .
+        ?author rdfs:label ?authorName .
+        OPTIONAL { ?authorship core:authorRank ?rank }
+      }
+    """)
+    println("authorData for " + pubURI + ": " + p)
+   }
 
   }
 
-}
-
-
-object PublicationIndexer {
-//take person uri + publication uri - get pub data then create or update person index document with json array of pubs
 }
