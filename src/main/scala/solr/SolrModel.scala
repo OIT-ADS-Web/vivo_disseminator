@@ -32,14 +32,14 @@ class ExtraItems(extraItems:Option[Map[String, String]]) extends ToMethods {
     }
   }
 
-  def json = {
+}
+
+object ExtraItems {
+  def json(ei:ExtraItems) = {
+    import net.liftweb.json.{JsonAST,Printer,Extraction,Merge}
     implicit val formats = net.liftweb.json.DefaultFormats
-    val j = JField("extraItems", Extraction.decompose(extraItems))
-    JObject(j :: Nil)
+    Printer.compact(JsonAST.render(Extraction.decompose(ei)))
   }
-
-  def jsonString = Printer.compact(JsonAST.render(json))
-
 }
 
 case class Publication(uri:String, 
@@ -48,20 +48,6 @@ case class Publication(uri:String,
                        authors:List[String],
                        extraItems:Option[Map[String, String]]) 
      extends ExtraItems(extraItems) 
-{
-  import net.liftweb.json.JsonDSL._
-  import net.liftweb.json.{JsonAST,Printer,Extraction,Merge}
-  import net.liftweb.json.JsonAST.{JObject,JValue}
-
-  override def json = {
-    val j = ("uri" -> uri) ~
-    ("vivoType"-> vivoType) ~
-    ("year" -> year) ~
-    ("authors" -> authors)
-    j ~ super.json
-  }
-
-}
 
 object Publication {
   def json(pub:Publication) = {
