@@ -2,6 +2,9 @@ package edu.duke.oit.vw.solr
 
 import org.apache.solr.client.solrj.SolrServer
 import org.apache.solr.common.SolrInputDocument
+import org.scardf._
+import org.scardf.Node
+import org.scardf.NodeConverter._
 
 import edu.duke.oit.jena.connection._
 import edu.duke.oit.jena.actor.JenaCache
@@ -21,6 +24,10 @@ class Vivo(url: String, user: String, password: String, dbType: String, driver: 
   def select(sparql: String) = {
     queryJenaCache(sparql)
   }
+
+  def numPeople = asInt(select(sparqlPrefixes + """
+    select (count(?p) as ?numPeople) where { ?p rdf:type core:FacultyMember }
+  """)(0)('numPeople).asInstanceOf[NodeFromGraph])
 
   def sparqlPrefixes: String = """
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -63,15 +70,18 @@ class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
 object PersonIndexer {
 
   def index(uri: String,vivo: Vivo,solr: SolrServer) = {
+    val solrDoc = new SolrInputDocument()
+    solrDoc.addField("id",uri)
+    solr.add(solrDoc)
+    solr.commit() //TODO: consider commiting at the end of indexPeople above
     val personData = vivo.select(vivo.sparqlPrefixes + """
       SELECT distinct ?name ?title
       WHERE{
-        """+uri+""" rdf:type core:FacultyMember .
+        """+uri+""" rdf:type foaf:Person .
         """+uri+""" rdfs:label ?name .
         OPTIONAL{ """+uri+""" core:preferredTitle ?title } .
     }
     """)
-    println("data for " + uri + ":" + personData)
 
     val publicationData = vivo.select(vivo.sparqlPrefixes + """
       select *
@@ -90,7 +100,6 @@ object PersonIndexer {
         OPTIONAL { ?publication bibo:pageEnd ?endPage }
       }
     """)
-    println("pubData for " + uri + ": " + publicationData)
 
    // grab uri's - get author data
    val publicationURIs = publicationData.map(_('publication))
@@ -105,7 +114,6 @@ object PersonIndexer {
         OPTIONAL { ?authorship core:authorRank ?rank }
       }
     """)
-    println("authorData for " + pubURI + ": " + p)
    }
 
   }
