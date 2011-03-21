@@ -16,12 +16,12 @@ class SolrModelSpec extends Specification {
   val solrSrv = Solr.solrServer(solrCfg)
   val doc1 = new SolrInputDocument()
   doc1.addField("id","http://faculty.duke.edu/test/1")
-  doc1.addField("test_field","a string for testing")
+  doc1.addField("json","a string for testing")
   solrSrv.add(doc1)
   solrSrv.commit()
   val doc2 = new SolrInputDocument
   doc2.addField("id","http://faculty.duke.edu/test/2")
-  doc2.addField("test_field", "this should be found ing1")
+  doc2.addField("json", "this should be found ing1")
   solrSrv.add(doc2)
   solrSrv.commit()
 
@@ -36,8 +36,8 @@ class SolrModelSpec extends Specification {
       val response = sr.getResponse.get("response").asInstanceOf[SolrDocumentList]
       println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>") 
       // println(response)
-      for (solrDoc <- response) println(solrDoc.get("test_field").asInstanceOf[String].endsWith("ing1"))
-      for (solrDoc <- response) println(solrDoc.get("test_field"))
+      for (solrDoc <- response) println(solrDoc.get("json").asInstanceOf[String].endsWith("ing1"))
+      for (solrDoc <- response) println(solrDoc.get("json"))
 
       println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>") 
     } // tag("focus")
@@ -59,9 +59,9 @@ class SolrExtractionSpec extends Specification {
     val person = PersonExtraction(testPersonJson)
     person.publications mustEqual List(Publication( "http://vivo.duke.edu/test1",
                                               "http://purl.org/ontology/bibo/Article",
-                                              "2005",
+                                              "Programming Tips",
                                               List("Lawrence GL", "Smith J"),
-                                              Some(Map("issue" -> "13"))) )
+                                              Some(Map("issue" -> "13","year" -> "2005"))) )
   }
 
   "Extract value from publications " in {
@@ -74,16 +74,17 @@ class SolrExtractionSpec extends Specification {
     {
       "uri": "http://vivo.duke.edu/person1",
       "name" : "Smith J",
-      "vivoType" : "http://xmlns.com/foaf/0.1/Person"
+      "vivoType" : "http://xmlns.com/foaf/0.1/Person",
+      "title" : "Professor of Testology",
       "publications": [
         {
           "uri": "http://vivo.duke.edu/test1",
           "vivoType": "http://purl.org/ontology/bibo/Article",
           "title": "Programming Tips",
-          "year": "2005",
           "authors": ["Lawrence GL","Smith J"],
           "extraItems": {
-            "issue": "13"
+            "issue": "13",
+            "year": "2005"
           }
         }
       ]
@@ -101,11 +102,11 @@ class SolrJsonProducingSpec extends Specification {
   }
 
   "Produce publication json" in {
-    val pub = Publication("http:/vivo.duke.edu/person1",
-                          "http://xmlns.com/foaf/0.1/Person",
-                          "2005",
+    val pub = Publication("http://vivo.duke.edu/test1",
+                          "http://purl.org/ontology/bibo/Article",
+                          "Programming Tips",
                           List("Smith J"),
-                          Option(Map("issue" -> "13")))
-    Publication.json(pub) must_== """{"uri":"http:/vivo.duke.edu/person1","vivoType":"http://xmlns.com/foaf/0.1/Person","year":"2005","authors":["Smith J"],"extraItems":{"issue":"13"}}"""
+                          Option(Map("issue" -> "13","year"->"2005")))
+    Publication.json(pub) must_== """{"uri":"http://vivo.duke.edu/test1","vivoType":"http://purl.org/ontology/bibo/Article","title":"Programming Tips","authors":["Smith J"],"extraItems":{"issue":"13","year":"2005"}}"""
   }
 }

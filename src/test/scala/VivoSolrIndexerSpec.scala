@@ -29,7 +29,7 @@ class VivoSolrIndexerSpec extends Specification {
       vivo.numPeople must be_> (0)
     }
 
-    "create a document in the index for each person in vivo with their uri as the id" in {
+    "create a document in the index for each person in vivo with their uri as the id and a json serialization in the 'json' field" in {
       vsi.indexPeople()
       val people = vivo.select(vivo.sparqlPrefixes + """
         select ?p where { ?p rdf:type core:FacultyMember }
@@ -38,6 +38,10 @@ class VivoSolrIndexerSpec extends Specification {
         val query = new SolrQuery().setQuery("id:\"" + p('p) + "\"")
         val personDocs = solrSrv.query(query).getResults()
         personDocs.getNumFound() must_== 1
+
+        val json = personDocs.iterator.next.get("json").toString
+        val person = PersonExtraction(json)
+        person.uri must_== p('p).toString
       }
     }
 

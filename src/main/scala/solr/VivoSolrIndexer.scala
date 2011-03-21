@@ -8,6 +8,7 @@ import org.scardf.NodeConverter._
 
 import edu.duke.oit.jena.connection._
 import edu.duke.oit.jena.actor.JenaCache
+import edu.duke.oit.jena.utils._
 
 class Vivo(url: String, user: String, password: String, dbType: String, driver: String) {
   def initializeJenaCache() = {
@@ -59,63 +60,82 @@ class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
     val peopleUris = vivo.select(vivo.sparqlPrefixes + """
       select ?person where { ?person rdf:type core:FacultyMember }
       """).map(_('person))
-    println("people uris: " + peopleUris)
     for (p <- peopleUris) {
       PersonIndexer.index(p.toString,vivo,solr)
     }
+    solr.commit()
   }
 
 }
 
-object PersonIndexer {
+object PersonIndexer extends SimpleConversion {
 
   def index(uri: String,vivo: Vivo,solr: SolrServer) = {
-    val solrDoc = new SolrInputDocument()
-    solrDoc.addField("id",uri)
-    solr.add(solrDoc)
-    solr.commit() //TODO: consider commiting at the end of indexPeople above
     val personData = vivo.select(vivo.sparqlPrefixes + """
-      SELECT distinct ?name ?title
+      SELECT *
       WHERE{
-        """+uri+""" rdf:type foaf:Person .
+        """+uri+""" vitro:moniker ?title .
+        """+uri+""" rdf:type ?type .
         """+uri+""" rdfs:label ?name .
-        OPTIONAL{ """+uri+""" core:preferredTitle ?title } .
+        FILTER(?type = foaf:Person) .
     }
     """)
 
-    val publicationData = vivo.select(vivo.sparqlPrefixes + """
-      select *
-      where {
-        """+uri+""" core:authorInAuthorship ?authorship .
-        ?publication core:informationResourceInAuthorship ?authorship .
-        ?publication rdfs:label ?title .
-        OPTIONAL { ?publication bibo:numPages ?numPages . }
-        OPTIONAL { ?publication bibo:edition ?edition . }
-        OPTIONAL { ?publication bibo:volume ?volume . }
-        OPTIONAL { ?publication bibo:year ?year . }
-        OPTIONAL { ?publication bibo:issue ?issue . }
-        OPTIONAL { ?publication core:hasPublicationVenue ?publicationVenue . ?publicationVenue rdfs:label ?publishedIn . }
-        OPTIONAL { ?publication core:publisher ?publisher. ?publisher rdfs:label ?publishedBy . }
-        OPTIONAL { ?publication bibo:pageStart ?startPage .}
-        OPTIONAL { ?publication bibo:pageEnd ?endPage }
-      }
-    """)
+     val publicationData = vivo.select(vivo.sparqlPrefixes + """
+       select *
+       where {
+         """+uri+""" core:authorInAuthorship ?authorship .
+         ?publication core:informationResourceInAuthorship ?authorship .
+         ?publication rdfs:label ?title .
+         ?publication rdf:type ?type .
+         OPTIONAL { ?publication bibo:numPages ?numPages . }
+         OPTIONAL { ?publication bibo:edition ?edition . }
+         OPTIONAL { ?publication bibo:volume ?volume . }
+         OPTIONAL { ?publication bibo:year ?year . }
+         OPTIONAL { ?publication bibo:issue ?issue . }
+         OPTIONAL { ?publication core:hasPublicationVenue ?publicationVenue . ?publicationVenue rdfs:label ?publishedIn . }
+         OPTIONAL { ?publication core:publisher ?publisher. ?publisher rdfs:label ?publishedBy . }
+         OPTIONAL { ?publication bibo:pageStart ?startPage .}
+         OPTIONAL { ?publication bibo:pageEnd ?endPage }
+       }
+     """)
 
-   // grab uri's - get author data
-   val publicationURIs = publicationData.map(_('publication))
-   println("pub URIs: " + publicationURIs)
-   for(pubURI <- publicationURIs) {
-     val p = vivo.select(vivo.sparqlPrefixes + """
-      select ?authorName ?rank
-      where {
-        """+pubURI+""" core:informationResourceInAuthorship ?authorship .
-        ?authorship core:linkedAuthor ?author .
-        ?author rdfs:label ?authorName .
-        OPTIONAL { ?authorship core:authorRank ?rank }
-      }
-    """)
-   }
+//  // grab uri's - get author data
+//  val publicationURIs = publicationData.map(_('publication))
+//  for(pubURI <- publicationURIs) {
+//    val p = vivo.select(vivo.sparqlPrefixes + """
+//     select ?authorName ?rank
+//     where {
+//       """+pubURI+""" core:informationResourceInAuthorship ?authorship .
+//       ?authorship core:linkedAuthor ?author .
+//       ?author rdfs:label ?authorName .
+//       OPTIONAL { ?authorship core:authorRank ?rank }
+//     }
+//   """)
+//  }
 
+   val pubs: List[Publication] = publicationData.map( pub => new Publication(uri      = getString(pub('publication)),
+                                                                             vivoType = getString(pub('type)),
+                                                                             title    = getString(pub('title)),
+                                                                             authors  = List(),
+                                                                             extraItems = parseExtraItems(pub,List('publication,'type,'title)))).asInstanceOf[List[Publication]]
+                                                                             //TODO: populate extra items by making a str,str map
+                                                                             //      collection any result with key not one of the require fields
+
+    val p = new Person(uri,
+                       vivoType = getString(personData(0)('type)),
+                       name     = getString(personData(0)('name)),
+                       title    = getString(personData(0)('title)),
+                       publications = pubs,
+                       extraItems = None)
+    val solrDoc = new SolrInputDocument()
+    solrDoc.addField("id",p.uri)
+    solrDoc.addField("json",Person.json(p))
+    solr.add(solrDoc)
   }
 
+  def parseExtraItems(resultMap: Map[QVar,Node], requiredKeys: List[QVar]): Option[Map[String,String]] = {
+    val extraItems = resultMap -- requiredKeys
+    Option(extraItems.map(kvp => (kvp._1.name -> getString(kvp._2))))
+  }
 }

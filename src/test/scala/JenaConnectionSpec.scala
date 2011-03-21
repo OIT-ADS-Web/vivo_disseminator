@@ -12,7 +12,7 @@ import edu.duke.oit.jena.utils._
 import edu.duke.oit.jena.connection._
 import edu.duke.oit.jena.actor.JenaCache
 
-object JenaConnectionSpec extends Specification with Timer with SimpleConvertion {
+object JenaConnectionSpec extends Specification with Timer with SimpleConversion {
 
   val dbURL = "jdbc:mysql://localhost:3306/vitrodb"
   val dbUser = "root"
@@ -101,7 +101,7 @@ object JenaConnectionSpec extends Specification with Timer with SimpleConvertion
 
 }
 
-trait SimpleConvertion {
+trait SimpleConversion {
 
   def getString(node: Node): String = {
     node match {
@@ -118,7 +118,7 @@ trait SimpleConvertion {
 
 }
 
-object QueryRunner extends SimpleConvertion with Timer {
+object QueryRunner extends SimpleConversion with Timer {
 
   def run(dbModel: JModel) = {
     //var model = ModelFactory.createDefaultModel

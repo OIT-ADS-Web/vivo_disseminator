@@ -24,14 +24,14 @@
  <fields>   
   <!-- general -->
   <field name="id"      type="string"   indexed="true"  stored="true"  multiValued="false" required="true"/>
-  <field name="test_field"      type="string"   indexed="true"  stored="true"  multiValued="false" required="false"/>
+  <field name="json"      type="string"   indexed="true"  stored="true"  multiValued="false" required="false"/>
  </fields>
 
  <!-- field to use to determine and enforce document uniqueness. -->
  <uniqueKey>id</uniqueKey>
 
  <!-- field for the QueryParser to use when an explicit fieldname is absent -->
- <defaultSearchField>test_field</defaultSearchField>
+ <defaultSearchField>json</defaultSearchField>
 
  <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
  <solrQueryParser defaultOperator="OR"/>

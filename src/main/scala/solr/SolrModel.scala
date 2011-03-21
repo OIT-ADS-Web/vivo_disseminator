@@ -42,12 +42,12 @@ object ExtraItems {
   }
 }
 
-case class Publication(uri:String, 
-                       vivoType:String, 
-                       year:String,
+case class Publication(uri:String,
+                       vivoType:String,
+                       title:String,
                        authors:List[String],
                        extraItems:Option[Map[String, String]]) 
-     extends ExtraItems(extraItems) 
+     extends ExtraItems(extraItems)
 
 object Publication {
   def json(pub:Publication) = {
@@ -57,9 +57,10 @@ object Publication {
   }
 }
 
-case class Person(uri:String, 
-                  vivoType:String, 
-                  name:String, 
+case class Person(uri:String,
+                  vivoType:String,
+                  name:String,
+                  title:String,
                   publications:List[Publication],
                   extraItems:Option[Map[String, String]])
      extends ExtraItems(extraItems)
