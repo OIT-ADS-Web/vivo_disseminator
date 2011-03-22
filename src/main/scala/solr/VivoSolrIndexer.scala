@@ -100,34 +100,18 @@ object PersonIndexer extends SimpleConversion {
        }
      """)
 
-//  // grab uri's - get author data
-//  val publicationURIs = publicationData.map(_('publication))
-//  for(pubURI <- publicationURIs) {
-//    val p = vivo.select(vivo.sparqlPrefixes + """
-//     select ?authorName ?rank
-//     where {
-//       """+pubURI+""" core:informationResourceInAuthorship ?authorship .
-//       ?authorship core:linkedAuthor ?author .
-//       ?author rdfs:label ?authorName .
-//       OPTIONAL { ?authorship core:authorRank ?rank }
-//     }
-//   """)
-//  }
-
    val pubs: List[Publication] = publicationData.map( pub => new Publication(uri      = getString(pub('publication)),
                                                                              vivoType = getString(pub('type)),
                                                                              title    = getString(pub('title)),
-                                                                             authors  = List(),
+                                                                             authors  = getAuthors(getString(pub('publication)),vivo),
                                                                              extraItems = parseExtraItems(pub,List('publication,'type,'title)))).asInstanceOf[List[Publication]]
-                                                                             //TODO: populate extra items by making a str,str map
-                                                                             //      collection any result with key not one of the require fields
 
     val p = new Person(uri,
                        vivoType = getString(personData(0)('type)),
                        name     = getString(personData(0)('name)),
                        title    = getString(personData(0)('title)),
                        publications = pubs,
-                       extraItems = None)
+                       extraItems = parseExtraItems(personData(0),List('type,'name,'title)))
     val solrDoc = new SolrInputDocument()
     solrDoc.addField("id",p.uri)
     solrDoc.addField("json",Person.json(p))
@@ -137,5 +121,19 @@ object PersonIndexer extends SimpleConversion {
   def parseExtraItems(resultMap: Map[QVar,Node], requiredKeys: List[QVar]): Option[Map[String,String]] = {
     val extraItems = resultMap -- requiredKeys
     Option(extraItems.map(kvp => (kvp._1.name -> getString(kvp._2))))
+  }
+
+  def getAuthors(pubURI: String, vivo: Vivo): List[String] = {
+    val authorData = vivo.select(vivo.sparqlPrefixes + """
+     select ?authorName ?rank
+     where {
+       """+pubURI+""" core:informationResourceInAuthorship ?authorship .
+       ?authorship core:linkedAuthor ?author .
+       ?author rdfs:label ?authorName .
+       OPTIONAL { ?authorship core:authorRank ?rank }
+     }
+    """)
+    val authorsWithRank = authorData.map(a => (getString(a('authorName)),getString(a.getOrElse('rank, Node.from("0")))))
+    authorsWithRank.sortWith((a1,a2) => (a1._2.toInt < a2._2.toInt)).map(_._1)
   }
 }
