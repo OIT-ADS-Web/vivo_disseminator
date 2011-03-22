@@ -4,14 +4,7 @@ import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.common.SolrDocumentList
 
 import edu.duke.oit.vw.solr._
-
-object TestServers {
-    val currentDirectory = new java.io.File(".").getCanonicalPath
-    val solrCfg = new SolrConfig(currentDirectory+"/solr/solr.xml",currentDirectory+"/solr","vivowidgetcore")
-    val solrSrv = Solr.solrServer(solrCfg)
-
-    val vivo = new Vivo("jdbc:mysql://localhost:3306/vitrodb","root","","MySQL","com.mysql.jdbc.Driver")
-}
+import edu.duke.oit.test.helpers.TestServers
 
 class VivoSolrIndexerSpec extends Specification {
 

@@ -1,7 +1,19 @@
 package edu.duke.oit.vw.solr
 
-class SolrModel(id: String) {
+import org.apache.solr.client.solrj.{SolrServer,SolrQuery}
+import org.apache.solr.common.{SolrInputDocument,SolrDocumentList,SolrDocument}
 
+trait SolrModel {
+
+  def getDocumentById(id: String,solr: SolrServer): Option[SolrDocument] = {
+    val query = new SolrQuery().setQuery("id:\"" + id + "\"")
+    val docList = solr.query(query).getResults()
+    if (docList.getNumFound() > 0) {
+      Option(docList.iterator.next())
+    } else {
+      None
+    }
+  }
 
 }
 
@@ -65,11 +77,18 @@ case class Person(uri:String,
                   extraItems:Option[Map[String, String]])
      extends ExtraItems(extraItems)
 
-object Person {
+object Person extends SolrModel {
   def json(person:Person) = {
     import net.liftweb.json.{JsonAST,Printer,Extraction,Merge}
     implicit val formats = net.liftweb.json.DefaultFormats
     Printer.compact(JsonAST.render(Extraction.decompose(person)))
+  }
+
+  def find(uri: String, solr: SolrServer): Option[Person] = {
+    getDocumentById(uri,solr) match {
+      case Some(sd) => Option(PersonExtraction(sd.get("json").toString))
+      case _ => None
+    }
   }
 }
 
