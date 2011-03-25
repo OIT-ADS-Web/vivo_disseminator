@@ -17,6 +17,37 @@ trait SolrModel {
 
 }
 
+
+/**
+ * Json helper methods
+ */
+object Json {
+  
+  /**
+   * Covert <code>item</item> to a json string representation format.
+   *
+   * @param item convert the item of type T to a json string.
+   */
+  def toJson[T](item:T) = {
+    import net.liftweb.json.{JsonAST,Printer,Extraction,Merge}
+    implicit val formats = net.liftweb.json.DefaultFormats
+    Printer.compact(JsonAST.render(Extraction.decompose(item)))
+  }
+
+}
+
+trait AddToJson {
+
+  /**
+   * Convert the current object to a json String.
+   * @return String representation of json.
+   */
+  def toJson = {
+    Json.toJson(this)
+  }
+
+}
+
 import edu.duke.oit.jena.utils._
 
 /**
@@ -25,7 +56,7 @@ import edu.duke.oit.jena.utils._
  * that aren't explicitly defined.
  * <code>extraItems</code> must a Map[String, String].
  */
-class ExtraItems(extraItems:Option[Map[String, String]]) extends ToMethods {
+class ExtraItems(extraItems:Option[Map[String, String]]) extends ToMethods with AddToJson {
   
   import net.liftweb.json.JsonDSL._
   import net.liftweb.json.{JsonAST,Printer,Extraction}
@@ -46,28 +77,13 @@ class ExtraItems(extraItems:Option[Map[String, String]]) extends ToMethods {
 
 }
 
-object ExtraItems {
-  def json(ei:ExtraItems) = {
-    import net.liftweb.json.{JsonAST,Printer,Extraction,Merge}
-    implicit val formats = net.liftweb.json.DefaultFormats
-    Printer.compact(JsonAST.render(Extraction.decompose(ei)))
-  }
-}
 
 case class Publication(uri:String,
                        vivoType:String,
                        title:String,
                        authors:List[String],
                        extraItems:Option[Map[String, String]]) 
-     extends ExtraItems(extraItems)
-
-object Publication {
-  def json(pub:Publication) = {
-    import net.liftweb.json.{JsonAST,Printer,Extraction,Merge}
-    implicit val formats = net.liftweb.json.DefaultFormats
-    Printer.compact(JsonAST.render(Extraction.decompose(pub)))
-  }
-}
+     extends ExtraItems(extraItems) with AddToJson
 
 case class Person(uri:String,
                   vivoType:String,
@@ -75,14 +91,14 @@ case class Person(uri:String,
                   title:String,
                   publications:List[Publication],
                   extraItems:Option[Map[String, String]])
-     extends ExtraItems(extraItems)
+     extends ExtraItems(extraItems) with AddToJson
 
 object Person extends SolrModel {
-  def json(person:Person) = {
-    import net.liftweb.json.{JsonAST,Printer,Extraction,Merge}
-    implicit val formats = net.liftweb.json.DefaultFormats
-    Printer.compact(JsonAST.render(Extraction.decompose(person)))
-  }
+  // def json(person:Person) = {
+  //   import net.liftweb.json.{JsonAST,Printer,Extraction,Merge}
+  //   implicit val formats = net.liftweb.json.DefaultFormats
+  //   Printer.compact(JsonAST.render(Extraction.decompose(person)))
+  // }
 
   def find(uri: String, solr: SolrServer): Option[Person] = {
     getDocumentById(uri,solr) match {
@@ -91,7 +107,6 @@ object Person extends SolrModel {
     }
   }
 }
-
 
 
 /**

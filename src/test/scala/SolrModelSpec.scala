@@ -127,7 +127,12 @@ class SolrJsonProducingSpec extends Specification {
 
   "Produce json for extraItems" in {
     val ei = new ExtraItems(Option(Map("a" -> "b", "c" -> "d")))
-    ExtraItems.json(ei) must_== """{"extraItems":{"a":"b","c":"d"}}"""
+    ei.toJson must_== """{"extraItems":{"a":"b","c":"d"}}"""
+  }
+
+  "Produce json from the Json object" in {
+    val ei = new ExtraItems(Option(Map("a" -> "b", "c" -> "d")))
+    Json.toJson(ei) must_== """{"extraItems":{"a":"b","c":"d"}}"""
   }
 
   "Produce publication json" in {
@@ -136,6 +141,6 @@ class SolrJsonProducingSpec extends Specification {
                           "Programming Tips",
                           List("Smith J"),
                           Option(Map("issue" -> "13","year"->"2005")))
-    Publication.json(pub) must_== """{"uri":"http://vivo.duke.edu/test1","vivoType":"http://purl.org/ontology/bibo/Article","title":"Programming Tips","authors":["Smith J"],"extraItems":{"issue":"13","year":"2005"}}"""
+    pub.toJson must_== """{"uri":"http://vivo.duke.edu/test1","vivoType":"http://purl.org/ontology/bibo/Article","title":"Programming Tips","authors":["Smith J"],"extraItems":{"issue":"13","year":"2005"}}"""
   }
 }

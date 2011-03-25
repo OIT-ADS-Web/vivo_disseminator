@@ -114,7 +114,7 @@ object PersonIndexer extends SimpleConversion {
                        extraItems = parseExtraItems(personData(0),List('type,'name,'title)))
     val solrDoc = new SolrInputDocument()
     solrDoc.addField("id",p.uri)
-    solrDoc.addField("json",Person.json(p))
+    solrDoc.addField("json",p.toJson)
     solr.add(solrDoc)
   }
 
