@@ -68,17 +68,16 @@ class ExtraItems(extraItems:Option[Map[String, String]]) extends ToMethods with 
    * @return Some(String) with the string value from the extraItems Map;
    *         otherwise None
    */
-  def \(key:String):Option[String] = {
+  def \(key:String): String = {
     extraItems match {
-      case Some(m) => m.get(key)
-      case _ => None
+      case Some(m) => m.get(key).orNull
+      case _ => null
     }
   }
 
-  def get(key:String):Option[String] = {
+  def get(key:String): String = {
     \(key)
   }
-
 
 }
 
