@@ -79,6 +79,14 @@ class ExtraItems(extraItems:Option[Map[String, String]]) extends ToMethods with 
     \(key)
   }
 
+  def getOrElse(key:String,default:String): String = {
+    \(key) match {
+      case null => default
+      case m:String => m
+      case _ => null
+    }
+  }
+
 }
 
 
