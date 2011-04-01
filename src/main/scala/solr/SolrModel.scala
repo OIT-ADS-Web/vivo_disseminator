@@ -75,6 +75,11 @@ class ExtraItems(extraItems:Option[Map[String, String]]) extends ToMethods with 
     }
   }
 
+  def get(key:String):Option[String] = {
+    \(key)
+  }
+
+
 }
 
 

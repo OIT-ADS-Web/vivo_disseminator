@@ -61,7 +61,7 @@ class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
       select ?person where { ?person rdf:type core:FacultyMember }
       """).map(_('person))
     for (p <- peopleUris) {
-      PersonIndexer.index(p.toString,vivo,solr)
+      PersonIndexer.index(p.toString.replaceAll("<|>",""),vivo,solr)
     }
     solr.commit()
   }
@@ -74,9 +74,9 @@ object PersonIndexer extends SimpleConversion {
     val personData = vivo.select(vivo.sparqlPrefixes + """
       SELECT *
       WHERE{
-        """+uri+""" vitro:moniker ?title .
-        """+uri+""" rdf:type ?type .
-        """+uri+""" rdfs:label ?name .
+        <"""+uri+"""> vitro:moniker ?title .
+        <"""+uri+"""> rdf:type ?type .
+        <"""+uri+"""> rdfs:label ?name .
         FILTER(?type = foaf:Person) .
     }
     """)
@@ -84,7 +84,7 @@ object PersonIndexer extends SimpleConversion {
      val publicationData = vivo.select(vivo.sparqlPrefixes + """
        select *
        where {
-         """+uri+""" core:authorInAuthorship ?authorship .
+         <"""+uri+"""> core:authorInAuthorship ?authorship .
          ?publication core:informationResourceInAuthorship ?authorship .
          ?publication rdfs:label ?title .
          ?publication rdf:type ?type .
@@ -100,10 +100,10 @@ object PersonIndexer extends SimpleConversion {
        }
      """)
 
-   val pubs: List[Publication] = publicationData.map( pub => new Publication(uri      = getString(pub('publication)),
+   val pubs: List[Publication] = publicationData.map( pub => new Publication(uri      = getString(pub('publication)).replaceAll("<|>",""),
                                                                              vivoType = getString(pub('type)),
                                                                              title    = getString(pub('title)),
-                                                                             authors  = getAuthors(getString(pub('publication)),vivo),
+                                                                             authors  = getAuthors(getString(pub('publication)).replaceAll("<|>",""),vivo),
                                                                              extraItems = parseExtraItems(pub,List('publication,'type,'title)))).asInstanceOf[List[Publication]]
 
     val p = new Person(uri,
@@ -127,7 +127,7 @@ object PersonIndexer extends SimpleConversion {
     val authorData = vivo.select(vivo.sparqlPrefixes + """
      select ?authorName ?rank
      where {
-       """+pubURI+""" core:informationResourceInAuthorship ?authorship .
+       <"""+pubURI+"""> core:informationResourceInAuthorship ?authorship .
        ?authorship core:linkedAuthor ?author .
        ?author rdfs:label ?authorName .
        OPTIONAL { ?authorship core:authorRank ?rank }

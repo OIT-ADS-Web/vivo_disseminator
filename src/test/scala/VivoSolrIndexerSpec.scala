@@ -28,13 +28,14 @@ class VivoSolrIndexerSpec extends Specification {
         select ?p where { ?p rdf:type core:FacultyMember }
       """)
       for (p <- people) {
-        val query = new SolrQuery().setQuery("id:\"" + p('p) + "\"")
+        val uri = p('p).toString.replaceAll("<|>","")
+        val query = new SolrQuery().setQuery("id:\"" + uri + "\"")
         val personDocs = solrSrv.query(query).getResults()
         personDocs.getNumFound() must_== 1
 
         val json = personDocs.iterator.next.get("json").toString
         val person = PersonExtraction(json)
-        person.uri must_== p('p).toString
+        person.uri must_== uri
       }
     }
 
