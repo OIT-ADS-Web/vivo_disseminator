@@ -101,13 +101,13 @@ object PersonIndexer extends SimpleConversion {
      """)
 
    val pubs: List[Publication] = publicationData.map( pub => new Publication(uri      = getString(pub('publication)).replaceAll("<|>",""),
-                                                                             vivoType = getString(pub('type)),
+                                                                             vivoType = getString(pub('type)).replaceAll("<|>",""),
                                                                              title    = getString(pub('title)),
                                                                              authors  = getAuthors(getString(pub('publication)).replaceAll("<|>",""),vivo),
                                                                              extraItems = parseExtraItems(pub,List('publication,'type,'title)))).asInstanceOf[List[Publication]]
 
     val p = new Person(uri,
-                       vivoType = getString(personData(0)('type)),
+                       vivoType = getString(personData(0)('type)).replaceAll("<|>",""),
                        name     = getString(personData(0)('name)),
                        title    = getString(personData(0)('title)),
                        publications = pubs,
