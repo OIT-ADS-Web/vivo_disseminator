@@ -77,7 +77,6 @@ object PersonIndexer extends SimpleConversion {
         <"""+uri+"""> vitro:moniker ?title .
         <"""+uri+"""> rdf:type ?type .
         <"""+uri+"""> rdfs:label ?name .
-        FILTER(?type = foaf:Person) .
     }
     """)
     if (personData.size > 0) {
@@ -89,6 +88,12 @@ object PersonIndexer extends SimpleConversion {
          ?publication core:informationResourceInAuthorship ?authorship .
          ?publication rdfs:label ?title .
          ?publication rdf:type ?type .
+         OPTIONAL {
+           ?publication rdf:type ?otherType .
+           ?otherType rdfs:subClassOf ?type .
+           FILTER(?otherType != ?type)
+         }
+         FILTER(!BOUND(?otherType))
          OPTIONAL { ?publication bibo:numPages ?numPages . }
          OPTIONAL { ?publication bibo:edition ?edition . }
          OPTIONAL { ?publication bibo:volume ?volume . }
