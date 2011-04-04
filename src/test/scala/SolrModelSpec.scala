@@ -96,7 +96,7 @@ class SolrExtractionSpec extends Specification {
   "Extract value from publications " in {
     val person = PersonExtraction(testPersonJson)
     val issue = person.publications.head \ "issue"
-    issue mustEqual Some("13")
+    issue mustEqual "13"
   }
 
   val testPersonJson = """

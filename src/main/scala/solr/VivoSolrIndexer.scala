@@ -80,6 +80,7 @@ object PersonIndexer extends SimpleConversion {
         FILTER(?type = foaf:Person) .
     }
     """)
+    if (personData.size > 0) {
 
      val publicationData = vivo.select(vivo.sparqlPrefixes + """
        select *
@@ -91,12 +92,12 @@ object PersonIndexer extends SimpleConversion {
          OPTIONAL { ?publication bibo:numPages ?numPages . }
          OPTIONAL { ?publication bibo:edition ?edition . }
          OPTIONAL { ?publication bibo:volume ?volume . }
-         OPTIONAL { ?publication bibo:year ?year . }
          OPTIONAL { ?publication bibo:issue ?issue . }
          OPTIONAL { ?publication core:hasPublicationVenue ?publicationVenue . ?publicationVenue rdfs:label ?publishedIn . }
          OPTIONAL { ?publication core:publisher ?publisher. ?publisher rdfs:label ?publishedBy . }
          OPTIONAL { ?publication bibo:pageStart ?startPage .}
-         OPTIONAL { ?publication bibo:pageEnd ?endPage }
+         OPTIONAL { ?publication bibo:pageEnd ?endPage .}
+         OPTIONAL { ?publication core:dateTimeValue ?datetime . ?datetime core:dateTime ?year }
        }
      """)
 
@@ -116,6 +117,7 @@ object PersonIndexer extends SimpleConversion {
     solrDoc.addField("id",p.uri)
     solrDoc.addField("json",p.toJson)
     solr.add(solrDoc)
+  }
   }
 
   def parseExtraItems(resultMap: Map[QVar,Node], requiredKeys: List[QVar]): Option[Map[String,String]] = {
