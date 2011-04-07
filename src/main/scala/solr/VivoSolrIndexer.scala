@@ -80,8 +80,7 @@ object PersonIndexer extends SimpleConversion {
     }
     """)
     if (personData.size > 0) {
-
-     val publicationData = vivo.select(vivo.sparqlPrefixes + """
+    val pubSparql = vivo.sparqlPrefixes + """
        select *
        where {
          <"""+uri+"""> core:authorInAuthorship ?authorship .
@@ -93,7 +92,7 @@ object PersonIndexer extends SimpleConversion {
            ?otherType rdfs:subClassOf ?type .
            FILTER(?otherType != ?type)
          }
-         FILTER(!BOUND(?otherType))
+         FILTER(!BOUND(?otherType) && ?type != owl:Thing)
          OPTIONAL { ?publication bibo:numPages ?numPages . }
          OPTIONAL { ?publication bibo:edition ?edition . }
          OPTIONAL { ?publication bibo:volume ?volume . }
@@ -102,9 +101,11 @@ object PersonIndexer extends SimpleConversion {
          OPTIONAL { ?publication core:publisher ?publisher. ?publisher rdfs:label ?publishedBy . }
          OPTIONAL { ?publication bibo:pageStart ?startPage .}
          OPTIONAL { ?publication bibo:pageEnd ?endPage .}
-         OPTIONAL { ?publication core:dateTimeValue ?datetime . ?datetime core:dateTime ?year }
+         OPTIONAL { ?publication core:dateTimeValue ?datetime . ?datetime core:dateTime ?year .}
        }
-     """)
+     """
+
+     val publicationData = vivo.select(pubSparql)
 
    val pubs: List[Publication] = publicationData.map( pub => new Publication(uri      = getString(pub('publication)).replaceAll("<|>",""),
                                                                              vivoType = getString(pub('type)).replaceAll("<|>",""),
