@@ -17,19 +17,22 @@
 -->
 
 <!--
- All (relative) paths are relative to the installation path
-  
-  persistent: Save changes made via the API to this file
-  sharedLib: path to a lib directory that will be shared across all cores
+ This is a stripped down config file used for a simple example...  
+ It is *not* a good example to work from. 
 -->
-<solr persistent="false">
+<config>
+  <updateHandler class="solr.DirectUpdateHandler2" />
+  <requestDispatcher handleSelect="true" >
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
+  </requestDispatcher>
+  
+  <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />
+  <requestHandler name="/update" class="solr.XmlUpdateRequestHandler" />
+  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
+  <!-- config for the admin interface --> 
+  <admin>
+    <defaultQuery>solr</defaultQuery>
+  </admin>
 
-  <!--
-  adminPath: RequestHandler path to manage cores.  
-    If 'null' (or absent), cores will not be manageable via request handler
-  -->
-  <cores adminPath="/admin/cores">
-    <core name="vivowidgetcore" instanceDir="vivowidgetcore" />
-    <core name="vivocore" instanceDir="vivocore" />
-  </cores>
-</solr>
+</config>
+

@@ -12,7 +12,7 @@ import edu.duke.oit.test.helpers.TestServers
 import scala.collection.JavaConversions._
 
 class SolrModelSpec extends Specification {
-  val solrSrv = TestServers.solrSrv
+  val solrSrv = TestServers.widgetSolr
 
 
   "A Solr Model" should {

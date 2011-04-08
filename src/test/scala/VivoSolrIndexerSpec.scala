@@ -10,7 +10,7 @@ class VivoSolrIndexerSpec extends Specification {
 
   "A Vivo Solr Indexer" should {
     val vivo = TestServers.vivo
-    val solrSrv = TestServers.solrSrv
+    val solrSrv = TestServers.widgetSolr
 
     solrSrv.deleteByQuery("*:*")
     vivo.initializeJenaCache()

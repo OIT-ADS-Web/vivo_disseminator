@@ -5,6 +5,7 @@ project/boot/
 .idea/
 *.iml
 solr/vivowidgetcore/data*
+solr/vivocore/data*
 outtenr*
 project/build/target/*
 sqlnet.log
