@@ -1,7 +1,10 @@
 package edu.duke.oit.vw.solr
 
 import org.apache.solr.client.solrj.{SolrServer,SolrQuery}
+import org.apache.solr.client.solrj.response.FacetField
 import org.apache.solr.common.{SolrInputDocument,SolrDocumentList,SolrDocument}
+import java.util.ArrayList
+import scala.collection.JavaConversions._
 
 trait SolrModel {
 
@@ -15,9 +18,46 @@ trait SolrModel {
     }
   }
 
+  def search(queryString: String, solr: SolrServer): VivoSearchResult = {
+    val query = new SolrQuery().setQuery(queryString).addFacetField("classgroup").setFacetMinCount(1).setRows(10000)
+    val response = solr.query(query)
+
+    val docList = response.getResults().toList
+    val items = parseItemList(docList)
+
+    val facetList = response.getLimitingFacets().toList(0).getValues
+    val facetMap = parseFacetMap(facetList)
+
+    new VivoSearchResult(items.size.toLong,facetMap,items)
+  }
+
+  protected
+
+  def parseItemList(docList: List[SolrDocument]): List[VivoSearchResultItem] = {
+    docList filter ( _.get("classgroup") != null ) map { doc =>
+      new VivoSearchResultItem(doc.get("URI").toString,
+                               doc.get("nameraw").toString,
+                               doc.get("classgroup") match {
+                                 case a: ArrayList[String] => parseClassGroupName(a(0))
+                                 case s: String => parseClassGroupName(s)
+                                 case _ => ""
+                               })
+    }
+  }
+
+  def parseClassGroupName(classgroup: String): String = {
+    classgroup.replace("http://vivoweb.org/ontology#vitroClassGroup","")
+  }
+
+  def parseFacetMap(facetList: java.util.List[FacetField.Count]): Map[String,Long] = {
+    facetList.map { f => (parseClassGroupName(f.getName),f.getCount) }.toMap
+  }
+
 }
 
+class VivoSearchResult(val numFound: Long,val  groups: Map[String,Long],val  items: List[VivoSearchResultItem]) extends AddToJson
 
+class VivoSearchResultItem(val uri: String,val  name: String,val  group: String)
 /**
  * Json helper methods
  */
