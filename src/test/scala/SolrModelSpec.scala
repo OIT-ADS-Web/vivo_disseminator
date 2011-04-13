@@ -35,7 +35,7 @@ class SolrModelSpec extends Specification {
     }
 
     "retrieve a document with a search string from the supplied server" in {
-      val result = TestModel.search("food",vivoSolr)
+      val result = TestModel.search("southern asia",vivoSolr)
       println(result.numFound)
       println(result.groups)
       println(result.items)

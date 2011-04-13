@@ -19,16 +19,18 @@ trait SolrModel {
   }
 
   def search(queryString: String, solr: SolrServer): VivoSearchResult = {
-    val query = new SolrQuery().setQuery(queryString).addFacetField("classgroup").setFacetMinCount(1).setRows(10000)
+    val query = new SolrQuery().setQuery(queryString).addFacetField("classgroup").setFacetMinCount(1).setRows(1000)
     val response = solr.query(query)
 
     val docList = response.getResults().toList
     val items = parseItemList(docList)
-
-    val facetList = response.getLimitingFacets().toList(0).getValues
-    val facetMap = parseFacetMap(facetList)
-
-    new VivoSearchResult(items.size.toLong,facetMap,items)
+    items.size match {
+      case 0 => new VivoSearchResult(0,Map(),List())
+      case _ => {
+        val facetList = response.getLimitingFacets().toList
+        new VivoSearchResult(items.size.toLong,parseFacetMap(facetList),items)
+      }
+    }
   }
 
   protected
@@ -49,8 +51,11 @@ trait SolrModel {
     classgroup.replace("http://vivoweb.org/ontology#vitroClassGroup","")
   }
 
-  def parseFacetMap(facetList: java.util.List[FacetField.Count]): Map[String,Long] = {
-    facetList.map { f => (parseClassGroupName(f.getName),f.getCount) }.toMap
+  def parseFacetMap(facetList: List[FacetField]): Map[String,Long] = {
+    facetList.size match {
+      case 0 => Map()
+      case _ => facetList(0).getValues().map { f => (parseClassGroupName(f.getName),f.getCount) }.toMap
+    }
   }
 
 }
