@@ -22,7 +22,7 @@ trait SolrModel {
     val query = new SolrQuery().setQuery(queryString).addFacetField("classgroup").setFacetMinCount(1).setRows(1000)
     val response = solr.query(query)
 
-    val docList = response.getResults().toList
+    val docList = response.getResults()
     val items = parseItemList(docList)
     items.size match {
       case 0 => new VivoSearchResult(0,Map(),List())
@@ -35,8 +35,8 @@ trait SolrModel {
 
   protected
 
-  def parseItemList(docList: List[SolrDocument]): List[VivoSearchResultItem] = {
-    docList filter ( _.get("classgroup") != null ) map { doc =>
+  def parseItemList(docList: SolrDocumentList): List[VivoSearchResultItem] = {
+    docList.toList filter  (_.get("classgroup") != null ) map { doc =>
       new VivoSearchResultItem(doc.get("URI").toString,
                                doc.get("nameraw").toString,
                                doc.get("classgroup") match {
@@ -59,6 +59,8 @@ trait SolrModel {
   }
 
 }
+
+object VivoSearcher extends SolrModel
 
 class VivoSearchResult(val numFound: Long,val  groups: Map[String,Long],val  items: List[VivoSearchResultItem]) extends AddToJson
 
