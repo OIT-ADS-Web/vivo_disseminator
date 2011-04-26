@@ -66,19 +66,30 @@ class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
     solr.commit()
   }
 
+  def reindexPerson(uri: String) = {
+    vivo.initializeJenaCache
+    PersonIndexer.index(uri, vivo, solr)
+    solr.commit
+  }
+
+  def getPerson(uri: String): Option[Person] = {
+    Person.find(uri, solr)
+  }
+
 }
 
 object PersonIndexer extends SimpleConversion {
 
   def index(uri: String,vivo: Vivo,solr: SolrServer) = {
-    val personData = vivo.select(vivo.sparqlPrefixes + """
-      SELECT *
-      WHERE{
-        <"""+uri+"""> vitro:moniker ?title .
-        <"""+uri+"""> rdf:type ?type .
-        <"""+uri+"""> rdfs:label ?name .
+    val query = vivo.sparqlPrefixes + """
+    SELECT *
+    WHERE {
+      <"""+uri+"""> vitro:moniker ?title .
+      <"""+uri+"""> rdf:type ?type .
+      <"""+uri+"""> rdfs:label ?name .
     }
-    """)
+    """
+    val personData = vivo.select(query)
     if (personData.size > 0) {
     val pubSparql = vivo.sparqlPrefixes + """
        select *

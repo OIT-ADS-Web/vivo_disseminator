@@ -8,9 +8,14 @@ import edu.duke.oit.test.helpers.TestServers
 
 class VivoSolrIndexerSpec extends Specification {
 
+  // load sample data from a base vivo instance
+  doBeforeSpec {
+    TestServers.loadSampleData
+  }
+  val vivo = TestServers.vivo
+  val solrSrv = TestServers.widgetSolr
+
   "A Vivo Solr Indexer" should {
-    val vivo = TestServers.vivo
-    val solrSrv = TestServers.widgetSolr
 
     solrSrv.deleteByQuery("*:*")
     vivo.initializeJenaCache()
@@ -20,7 +25,7 @@ class VivoSolrIndexerSpec extends Specification {
     "be connected to a vivo server with more than 0 people" in {
       // guard against running tests with bad db
       vivo.numPeople must be_> (0)
-    }
+    } tag ("focus")
 
     "create a document in the index for each person in vivo with their uri as the id and a json serialization in the 'json' field" in {
       vsi.indexPeople()
@@ -37,9 +42,19 @@ class VivoSolrIndexerSpec extends Specification {
         val person = PersonExtraction(json)
         person.uri must_== uri
       }
-    }
+    } 
 
-  }
+    "update the indexed document for an individual" in {
+      vsi.indexPeople
+      val people = vivo.select(vivo.sparqlPrefixes + """
+        select ?p where { ?p rdf:type core:FacultyMember }
+      """)
+
+      val uri = people.head('p).toString.replaceAll("<|>","")
+      vsi.reindexPerson(uri)
+    } tag ("focus")
+
+  } tag("focus")
 
 
 }

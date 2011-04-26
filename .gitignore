@@ -3,6 +3,7 @@ lib_managed/
 src_managed/
 project/boot/
 .idea/
+activemq-data/
 *.iml
 solr/vivowidgetcore/data*
 solr/vivocore/data*

@@ -42,9 +42,29 @@ class SDBSparqlProject(info: ProjectInfo) extends DefaultProject(info) {
     "commons-logging" % "commons-logging" % "1.1.1",
     "joda-time" % "joda-time" % "1.6",
 
+    // might want to switch to logback in the future - updated version of log4j
+    // "com.googlecode.sli4j" % "sli4j-slf4j" % "2.0",
+    // "com.googlecode.sli4j" % "sli4j-slf4j-logback" % "2.0",
+
     "org.apache.solr" % "solr-core" % "1.4.1",
-    "org.apache.solr" % "solr-solrj" % "1.4.1" 
+    "org.apache.solr" % "solr-solrj" % "1.4.1",
+    
+    "org.apache.activemq" % "activemq-camel" % "5.5.0",
+    "org.apache.activemq" % "activemq-core" % "5.5.0",
+    "com.h2database" % "h2" % "1.3.154" % "test->default"
+
 
   ) ++ super.libraryDependencies
+
+  // override def ivyXML =
+  //   <dependencies>
+  //     <dependency org="org.apache.solr" name="solr-core" rev="3.1.0">
+  //       <exclude module="slf4j-api"/>
+  //       <exclude module="slf4j-jdk14"/>
+  //     </dependency>
+  //     <dependency org="org.apache.solr" name="solr-solrj" rev="3.1.0">
+  //       <exclude module="slf4j-api"/>
+  //     </dependency>
+  //   </dependencies>
 
 }

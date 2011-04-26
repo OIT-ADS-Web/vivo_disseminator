@@ -3,13 +3,16 @@ package edu.duke.oit.vw.solr
 import org.apache.solr.client.solrj.{SolrServer,SolrQuery}
 import org.apache.solr.common.{SolrInputDocument,SolrDocumentList,SolrDocument}
 
+// use scala collections with java iterators
+import scala.collection.JavaConversions._
+
 trait SolrModel {
 
   def getDocumentById(id: String,solr: SolrServer): Option[SolrDocument] = {
     val query = new SolrQuery().setQuery("id:\"" + id + "\"")
     val docList = solr.query(query).getResults()
     if (docList.getNumFound() > 0) {
-      Option(docList.iterator.next())
+      Option(docList.head)
     } else {
       None
     }

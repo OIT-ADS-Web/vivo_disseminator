@@ -11,6 +11,7 @@ import com.hp.hpl.jena.sdb.sql.SDBConnection
 import com.hp.hpl.jena.sdb.store.DatabaseType
 import com.hp.hpl.jena.sdb.store.DatasetStore
 import com.hp.hpl.jena.sdb.store.LayoutType
+import com.hp.hpl.jena.sdb.util.StoreUtils
 
 import com.hp.hpl.jena.graph.Graph
 import com.hp.hpl.jena.rdf.model.{Resource, ModelFactory, ModelMaker, Model => JModel}
@@ -36,7 +37,6 @@ object Jena {
     }
   }
 
-
   // SDB methods
 
   // might want to make these configurable globally
@@ -58,12 +58,32 @@ object Jena {
     }
   }
 
+  def truncateAndCreateStore(cInfo: JenaConnectionInfo) = {
+    connectionSDB(cInfo) { sdbConnection =>
+      val store = SDBFactory.connectStore(sdbConnection, storeDesc(Some(cInfo.dbType)))
+      try {
+        if (StoreUtils.isFormatted(store)) {
+          store.getTableFormatter().truncate()
+        }
+        store.getTableFormatter().create()
+      }
+      finally {
+        store.close
+      }
+    }
+  }
 
   def sdbStore(cInfo: JenaConnectionInfo)(mFactory: (Store) => Unit) = {
     connectionSDB(cInfo) {
       sdbConnection =>
+        val store = SDBFactory.connectStore(sdbConnection, storeDesc(Some(cInfo.dbType)))
+      try {
         val graph: Graph = SDBFactory.connectDefaultGraph(storeDesc(Some(cInfo.dbType)))
-        mFactory(SDBFactory.connectStore(sdbConnection, storeDesc(Some(cInfo.dbType))))
+        mFactory(store)
+      }
+      finally {
+        store.close
+      }
     }
   }
 
