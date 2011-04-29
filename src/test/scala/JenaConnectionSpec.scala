@@ -101,23 +101,6 @@ object JenaConnectionSpec extends Specification with Timer with SimpleConversion
 
 }
 
-trait SimpleConversion {
-
-  def getString(node: Node): String = {
-    node match {
-      case n: PlainLiteral => n / asString
-      case b: TypedLiteral => {
-        b.isLiteral match {
-          case true => b / asLexic
-          case _ => b.toString
-        }
-      }
-      case _ => node.toString
-    }
-  }
-
-}
-
 object QueryRunner extends SimpleConversion with Timer {
 
   def run(dbModel: JModel) = {

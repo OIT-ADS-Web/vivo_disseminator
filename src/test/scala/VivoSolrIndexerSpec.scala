@@ -1,17 +1,14 @@
 package edu.duke.oit.vw.solr.test
+
 import org.specs._
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.common.SolrDocumentList
 
 import edu.duke.oit.vw.solr._
-import edu.duke.oit.test.helpers.TestServers
+import edu.duke.oit.test.helpers.{TestServers,SampleLoader}
 
-class VivoSolrIndexerSpec extends Specification {
+class VivoSolrIndexerSpec extends Specification with SampleLoader {
 
-  // load sample data from a base vivo instance
-  doBeforeSpec {
-    TestServers.loadSampleData
-  }
   val vivo = TestServers.vivo
   val solrSrv = TestServers.widgetSolr
 
@@ -42,7 +39,7 @@ class VivoSolrIndexerSpec extends Specification {
         val person = PersonExtraction(json)
         person.uri must_== uri
       }
-    } 
+    } tag ("focus")
 
     "update the indexed document for an individual" in {
       vsi.indexPeople
@@ -52,6 +49,8 @@ class VivoSolrIndexerSpec extends Specification {
 
       val uri = people.head('p).toString.replaceAll("<|>","")
       vsi.reindexPerson(uri)
+      val person = vsi.getPerson(uri)
+      // println(">>>> person: " + person)
     } tag ("focus")
 
   } tag("focus")

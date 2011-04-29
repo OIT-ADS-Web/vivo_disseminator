@@ -1,6 +1,7 @@
 package edu.duke.oit.test.helpers
 
 import edu.duke.oit.vw.solr._
+import org.specs._
 
 object TestServers {
   val currentDirectory = new java.io.File(".").getCanonicalPath
@@ -43,4 +44,16 @@ object TestServers {
     println("[DONE]")
 
   }
+}
+
+/**
+ * Extend your specificiation with this trait to have the sample RDF model loaded.
+ */
+trait SampleLoader extends Specification {
+
+  // load sample data from a base vivo instance
+  doBeforeSpec {
+    TestServers.loadSampleData
+  }
+  
 }
