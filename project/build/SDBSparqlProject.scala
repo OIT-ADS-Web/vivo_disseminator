@@ -1,6 +1,6 @@
 import sbt._
 
-class SDBSparqlProject(info: ProjectInfo) extends DefaultProject(info) {
+class SDBSparqlProject(info: ProjectInfo) extends DefaultProject(info) with AkkaProject {
 
   // this restrict the executed classes names to end with either "Spec" or "Unit"
   override def includeTest(s: String) = { s.endsWith("Spec") || s.endsWith("Unit") }
@@ -15,6 +15,7 @@ class SDBSparqlProject(info: ProjectInfo) extends DefaultProject(info) {
   val scalatools_release = "Scala Tools Snapshot" at
     "http://scala-tools.org/repo-releases/"
 
+  val akkaCamel = akkaModule("camel")
 
   override def repositories = Set(
     //"Java.Net" at "http://download.java.net/maven/2",
@@ -45,6 +46,8 @@ class SDBSparqlProject(info: ProjectInfo) extends DefaultProject(info) {
     // might want to switch to logback in the future - updated version of log4j
     // "com.googlecode.sli4j" % "sli4j-slf4j" % "2.0",
     // "com.googlecode.sli4j" % "sli4j-slf4j-logback" % "2.0",
+
+    "org.slf4j" % "slf4j-api" % "1.5.11",
 
     "org.apache.solr" % "solr-core" % "1.4.1",
     "org.apache.solr" % "solr-solrj" % "1.4.1",

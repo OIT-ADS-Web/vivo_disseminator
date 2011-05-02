@@ -1,7 +1,9 @@
 package edu.duke.oit.vw.solr
 
-import org.apache.solr.client.solrj.SolrServer
-import org.apache.solr.common.SolrInputDocument
+import org.apache.solr.client.solrj.{SolrServer,SolrQuery}
+import org.apache.solr.client.solrj.response.QueryResponse
+import org.apache.solr.common.{SolrInputDocument,SolrDocumentList}
+
 import org.scardf._
 import org.scardf.Node
 import org.scardf.NodeConverter._
@@ -9,6 +11,9 @@ import org.scardf.NodeConverter._
 import edu.duke.oit.jena.connection._
 import edu.duke.oit.jena.actor.JenaCache
 import edu.duke.oit.jena.utils._
+
+// use scala collections with java iterators
+import scala.collection.JavaConversions._
 
 class Vivo(url: String, user: String, password: String, dbType: String, driver: String) {
   def initializeJenaCache() = {
@@ -53,6 +58,7 @@ class Vivo(url: String, user: String, password: String, dbType: String, driver: 
 }
 
 class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
+
   def indexPeople() = {
    // TODO: remove next line, and only use vivo.select - hardcoding now for dev purposes 
    // vivo.select should have cached/live argument and vivo instance should know whether to init or not
@@ -64,6 +70,14 @@ class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
       PersonIndexer.index(p.toString.replaceAll("<|>",""),vivo,solr)
     }
     solr.commit()
+  }
+
+  def reindexUri(uri: String) = {
+    var query = new SolrQuery();
+    query.setQuery( "json:" + uri )
+    var rsp = solr.query( query )
+    val docs = rsp.getResults()
+    docs.map {doc => reindexPerson(doc.getFieldValue("id").asInstanceOf[String])}
   }
 
   def reindexPerson(uri: String) = {
