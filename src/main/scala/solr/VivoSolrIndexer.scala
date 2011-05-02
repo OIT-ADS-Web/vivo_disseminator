@@ -181,7 +181,7 @@ object PersonIndexer extends SimpleConversion {
        OPTIONAL { ?authorship core:authorRank ?rank }
      }
     """)
-    val authorsWithRank = authorData.map(a => (getString(a('authorName)),getString(a.getOrElse('rank, Node.from("0")))))
+    val authorsWithRank = authorData.map(a => (getString(a('authorName)),getString(a.getOrElse('rank, Node.from("0"))))).distinct
     authorsWithRank.sortWith((a1,a2) => (a1._2.toInt < a2._2.toInt)).map(_._1)
   }
 }
