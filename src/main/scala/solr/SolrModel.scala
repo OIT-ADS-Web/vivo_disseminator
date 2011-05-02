@@ -51,6 +51,10 @@ trait SolrModel {
     classgroup.replace("http://vivoweb.org/ontology#vitroClassGroup","")
   }
 
+  def parseTypeName(vivoType: String): String = {
+    vivoType.split("/").last.split("#").last
+  }
+
   def parseFacetMap(facetList: List[FacetField]): Map[String,Long] = {
     facetList.size match {
       case 0 => Map()
@@ -149,7 +153,14 @@ case class Person(uri:String,
                   name:String,
                   title:String,
                   publications:List[Publication],
+                  grants:List[Grant],
                   extraItems:Option[Map[String, String]])
+     extends ExtraItems(extraItems) with AddToJson
+
+case class Grant(uri:String,
+                 vivoType: String,
+                 name: String,
+                 extraItems:Option[Map[String, String]])
      extends ExtraItems(extraItems) with AddToJson
 
 object Person extends SolrModel {

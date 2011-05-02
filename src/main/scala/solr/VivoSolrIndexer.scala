@@ -113,11 +113,31 @@ object PersonIndexer extends SimpleConversion {
                                                                              authors  = getAuthors(getString(pub('publication)).replaceAll("<|>",""),vivo),
                                                                              extraItems = parseExtraItems(pub,List('publication,'type,'title)))).asInstanceOf[List[Publication]]
 
+   val grantSparql = vivo.sparqlPrefixes + """
+     select  *
+     where {
+       <"""+uri+"""> core:hasResearcherRole ?role .
+       ?role rdfs:label ?roleName .
+       ?role core:roleIn ?agreement .
+       ?agreement rdf:type ?type .
+       ?agreement rdfs:label ?grantName .
+       FILTER(?type = core:Grant)
+     }
+   """
+
+   val grantData = vivo.select(grantSparql)
+
+   val grants: List[Grant] = grantData.map(grant => new Grant(uri      = getString(grant('agreement)).replaceAll("<|>",""),
+                                                              vivoType = getString(grant('type)).replaceAll("<|>",""),
+                                                              name     = getString(grant('grantName)),
+                                                              extraItems = parseExtraItems(grant,List('agreement,'type,'grantName)))).asInstanceOf[List[Grant]]
+
     val p = new Person(uri,
                        vivoType = getString(personData(0)('type)).replaceAll("<|>",""),
                        name     = getString(personData(0)('name)),
                        title    = getString(personData(0)('title)),
                        publications = pubs,
+                       grants = grants,
                        extraItems = parseExtraItems(personData(0),List('type,'name,'title)))
     val solrDoc = new SolrInputDocument()
     solrDoc.addField("id",p.uri)
