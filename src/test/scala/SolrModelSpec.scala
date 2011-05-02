@@ -124,6 +124,7 @@ class SolrExtractionSpec extends Specification {
 // "
 class SolrJsonProducingSpec extends Specification {
   import edu.duke.oit.vw.solr._
+  import edu.duke.oit.jena.utils.Json
 
   "Produce json for extraItems" in {
     val ei = new ExtraItems(Option(Map("a" -> "b", "c" -> "d")))

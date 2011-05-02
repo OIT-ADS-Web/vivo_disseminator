@@ -3,6 +3,8 @@ package edu.duke.oit.vw.solr
 import org.apache.solr.client.solrj.{SolrServer,SolrQuery}
 import org.apache.solr.common.{SolrInputDocument,SolrDocumentList,SolrDocument}
 
+import edu.duke.oit.jena.utils._
+
 // use scala collections with java iterators
 import scala.collection.JavaConversions._
 
@@ -19,39 +21,6 @@ trait SolrModel {
   }
 
 }
-
-
-/**
- * Json helper methods
- */
-object Json {
-  
-  /**
-   * Covert <code>item</item> to a json string representation format.
-   *
-   * @param item convert the item of type T to a json string.
-   */
-  def toJson[T](item:T) = {
-    import net.liftweb.json.{JsonAST,Printer,Extraction,Merge}
-    implicit val formats = net.liftweb.json.DefaultFormats
-    Printer.compact(JsonAST.render(Extraction.decompose(item)))
-  }
-
-}
-
-trait AddToJson {
-
-  /**
-   * Convert the current object to a json String.
-   * @return String representation of json.
-   */
-  def toJson = {
-    Json.toJson(this)
-  }
-
-}
-
-import edu.duke.oit.jena.utils._
 
 /**
  * The <code>extraItems</code> value is a catch all hash that
@@ -109,11 +78,6 @@ case class Person(uri:String,
      extends ExtraItems(extraItems) with AddToJson
 
 object Person extends SolrModel {
-  // def json(person:Person) = {
-  //   import net.liftweb.json.{JsonAST,Printer,Extraction,Merge}
-  //   implicit val formats = net.liftweb.json.DefaultFormats
-  //   Printer.compact(JsonAST.render(Extraction.decompose(person)))
-  // }
 
   def find(uri: String, solr: SolrServer): Option[Person] = {
     getDocumentById(uri,solr) match {
@@ -121,6 +85,7 @@ object Person extends SolrModel {
       case _ => None
     }
   }
+
 }
 
 

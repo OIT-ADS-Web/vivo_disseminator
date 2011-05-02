@@ -34,3 +34,33 @@ trait SimpleConversion {
   }
 
 }
+
+/**
+ * Json helper methods
+ */
+object Json {
+  
+  /**
+   * Covert <code>item</item> to a json string representation format.
+   *
+   * @param item convert the item of type T to a json string.
+   */
+  def toJson[T](item:T) = {
+    import net.liftweb.json.{JsonAST,Printer,Extraction,Merge}
+    implicit val formats = net.liftweb.json.DefaultFormats
+    Printer.compact(JsonAST.render(Extraction.decompose(item)))
+  }
+
+}
+
+trait AddToJson {
+
+  /**
+   * Convert the current object to a json String.
+   * @return String representation of json.
+   */
+  def toJson = {
+    Json.toJson(this)
+  }
+
+}
