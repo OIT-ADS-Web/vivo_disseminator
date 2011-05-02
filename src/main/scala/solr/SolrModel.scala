@@ -154,6 +154,7 @@ case class Person(uri:String,
                   title:String,
                   publications:List[Publication],
                   grants:List[Grant],
+                  courses:List[Course],
                   extraItems:Option[Map[String, String]])
      extends ExtraItems(extraItems) with AddToJson
 
@@ -163,13 +164,13 @@ case class Grant(uri:String,
                  extraItems:Option[Map[String, String]])
      extends ExtraItems(extraItems) with AddToJson
 
-object Person extends SolrModel {
-  // def json(person:Person) = {
-  //   import net.liftweb.json.{JsonAST,Printer,Extraction,Merge}
-  //   implicit val formats = net.liftweb.json.DefaultFormats
-  //   Printer.compact(JsonAST.render(Extraction.decompose(person)))
-  // }
+case class Course(uri:String,
+                 vivoType: String,
+                 name: String,
+                 extraItems:Option[Map[String, String]])
+     extends ExtraItems(extraItems) with AddToJson
 
+object Person extends SolrModel {
   def find(uri: String, solr: SolrServer): Option[Person] = {
     getDocumentById(uri,solr) match {
       case Some(sd) => Option(PersonExtraction(sd.get("json").toString))
