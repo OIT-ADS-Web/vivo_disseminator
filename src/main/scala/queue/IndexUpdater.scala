@@ -6,7 +6,6 @@ import java.net.URI
 import edu.duke.oit.vw.solr.VivoSolrIndexer
 
 import akka.actor.Actor
-// import akka.actor.Actor._
 import akka.camel.{Message, Consumer}
 
 object IndexUpdater {
@@ -26,27 +25,38 @@ object IndexUpdater {
 
   def createAndStart(uri:String) = {
     var bService = new BrokerService
-    val connector = new TransportConnector
-    connector.setUri(new URI(uri))
-    bService.addConnector(connector)
-    bService.setBrokerName(IndexUpdater.brokerName)
-    bService.start()
-    broker = Some(bService)
+    // val connector = new TransportConnector
+    // connector.setUri(new URI(uri))
+    // bService.addConnector(connector)
+    // bService.setBrokerName(IndexUpdater.brokerName)
+    // bService.start()
+    // broker = Some(bService)
+
+    // configure the broker
+    bService.addConnector(uri)
+
     bService
   }
 
   def startConsumer(vsi:Option[VivoSolrIndexer]) = {
-    import akka.actor.Actor._
+    // import akka.actor.Actor._
     import akka.camel.CamelServiceManager._
  
+    println(">> sarting camel service")
     startCamelService
+    println(">> done starting camel service")
     val indexUpdater = Actor.actorOf(new IndexUpdater(vsi)).start
+    println(">> finished actor")
+
   }
 
   def checkSize = {
     broker match {
-      case Some(b) => b.checkQueueSize(IndexUpdater.queueName)
-      case _ => Unit
+      case Some(b) => {
+        println(">> checking the size")
+        b.checkQueueSize(IndexUpdater.queueName)
+      }
+      case _ => println(">> broker not found!")
     }
   }
 
@@ -72,7 +82,7 @@ object UpdateMessage {
 }
 
 
-class IndexUpdater(vsi: Option[VivoSolrIndexer]) extends Actor with Consumer {
+class IndexUpdater(vsi: Option[VivoSolrIndexer]=None) extends Actor with Consumer {
 
   def this() = {
     this(None)
@@ -82,15 +92,20 @@ class IndexUpdater(vsi: Option[VivoSolrIndexer]) extends Actor with Consumer {
  
   def receive = {
     case msg:Message => { 
+      println(">> received message")
       val msgString = msg.bodyAs[String]
+      println(">> msgString: " +msgString)
       val updateMessage = UpdateMessage(msgString)
       vsi match {
-        case Some(vsi) => vsi.reindexUri(updateMessage.uri)
-        case _ => println("No VivoSolrIndexer available for: " + msgString)
+        case Some(vsi) => {
+          println(">> reindex: " + updateMessage.uri)
+          vsi.reindexUri(updateMessage.uri)
+        }
+        case _ => println(">> No VivoSolrIndexer available for: " + msgString)
       }
     }
     case _ => { 
-      println("no message!!")
+      println(">> no message!!")
     }
   }
 

@@ -1,7 +1,10 @@
 package edu.duke.oit.vw.solr
 
 import org.apache.solr.client.solrj.{SolrServer,SolrQuery}
+import org.apache.solr.client.solrj.response.FacetField
 import org.apache.solr.common.{SolrInputDocument,SolrDocumentList,SolrDocument}
+import java.util.ArrayList
+import scala.collection.JavaConversions._
 
 import edu.duke.oit.jena.utils._
 
@@ -20,7 +23,57 @@ trait SolrModel {
     }
   }
 
+  def search(queryString: String, solr: SolrServer): VivoSearchResult = {
+    val query = new SolrQuery().setQuery(queryString).addFacetField("classgroup").setFacetMinCount(1).setRows(1000)
+    val response = solr.query(query)
+
+    val docList = response.getResults()
+    val items = parseItemList(docList)
+    items.size match {
+      case 0 => new VivoSearchResult(0,Map(),List())
+      case _ => {
+        val facetList = response.getLimitingFacets().toList
+        new VivoSearchResult(items.size.toLong,parseFacetMap(facetList),items)
+      }
+    }
+  }
+
+  protected
+
+  def parseItemList(docList: SolrDocumentList): List[VivoSearchResultItem] = {
+    docList.toList filter  (_.get("classgroup") != null ) map { doc =>
+      new VivoSearchResultItem(doc.get("URI").toString,
+                               doc.get("nameraw").toString,
+                               doc.get("classgroup") match {
+                                 case a: ArrayList[String] => parseClassGroupName(a(0))
+                                 case s: String => parseClassGroupName(s)
+                                 case _ => ""
+                               })
+    }
+  }
+
+  def parseClassGroupName(classgroup: String): String = {
+    classgroup.replace("http://vivoweb.org/ontology#vitroClassGroup","")
+  }
+
+  def parseTypeName(vivoType: String): String = {
+    vivoType.split("/").last.split("#").last
+  }
+
+  def parseFacetMap(facetList: List[FacetField]): Map[String,Long] = {
+    facetList.size match {
+      case 0 => Map()
+      case _ => facetList(0).getValues().map { f => (parseClassGroupName(f.getName),f.getCount) }.toMap
+    }
+  }
+
 }
+
+object VivoSearcher extends SolrModel
+
+class VivoSearchResult(val numFound: Long,val  groups: Map[String,Long],val  items: List[VivoSearchResultItem]) extends AddToJson
+
+class VivoSearchResultItem(val uri: String,val  name: String,val  group: String)
 
 /**
  * The <code>extraItems</code> value is a catch all hash that
@@ -74,7 +127,14 @@ case class Person(uri:String,
                   name:String,
                   title:String,
                   publications:List[Publication],
+                  grants:List[Grant],
                   extraItems:Option[Map[String, String]])
+     extends ExtraItems(extraItems) with AddToJson
+
+case class Grant(uri:String,
+                 vivoType: String,
+                 name: String,
+                 extraItems:Option[Map[String, String]])
      extends ExtraItems(extraItems) with AddToJson
 
 object Person extends SolrModel {
