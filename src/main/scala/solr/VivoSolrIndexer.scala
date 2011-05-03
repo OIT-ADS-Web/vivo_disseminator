@@ -157,12 +157,32 @@ object PersonIndexer extends SimpleConversion {
                                                               name     = getString(grant('grantName)),
                                                               extraItems = parseExtraItems(grant,List('agreement,'type,'grantName)))).asInstanceOf[List[Grant]]
 
+   val courseSparql = vivo.sparqlPrefixes + """
+     select  *
+     where {
+       <"""+uri+"""> core:hasTeacherRole ?role .
+       ?role rdfs:label ?roleName .
+       ?role core:roleIn ?course .
+       ?course rdf:type ?type .
+       ?course rdfs:label ?courseName .
+       FILTER(?type = core:Course)
+     }
+   """
+
+   val courseData = vivo.select(courseSparql)
+
+   val courses: List[Course] = courseData.map(course => new Course(uri      = getString(course('course)).replaceAll("<|>",""),
+                                                                   vivoType = getString(course('type)).replaceAll("<|>",""),
+                                                                   name     = getString(course('courseName)),
+                                                                   extraItems = parseExtraItems(course,List('course,'type,'courseName)))).asInstanceOf[List[Course]]
+
     val p = new Person(uri,
                        vivoType = getString(personData(0)('type)).replaceAll("<|>",""),
                        name     = getString(personData(0)('name)),
                        title    = getString(personData(0)('title)),
                        publications = pubs,
                        grants = grants,
+                       courses = courses,
                        extraItems = parseExtraItems(personData(0),List('type,'name,'title)))
     val solrDoc = new SolrInputDocument()
     solrDoc.addField("id",p.uri)
@@ -186,7 +206,7 @@ object PersonIndexer extends SimpleConversion {
        OPTIONAL { ?authorship core:authorRank ?rank }
      }
     """)
-    val authorsWithRank = authorData.map(a => (getString(a('authorName)),getString(a.getOrElse('rank, Node.from("0")))))
+    val authorsWithRank = authorData.map(a => (getString(a('authorName)),getString(a.getOrElse('rank, Node.from("0"))))).distinct
     authorsWithRank.sortWith((a1,a2) => (a1._2.toInt < a2._2.toInt)).map(_._1)
   }
 }
