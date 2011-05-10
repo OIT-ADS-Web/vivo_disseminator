@@ -26,19 +26,21 @@ object TestServers {
     import com.hp.hpl.jena.rdf.model._
     import com.hp.hpl.jena.util.FileManager
     import java.io.InputStream
-    
-    print("loading sample data...")
-    val sampleFile = currentDirectory+"/src/test/resources/vivo_base.rdf"
 
-    Class.forName("org.h2.Driver")
+   print("loading sample data...")
+   val sampleInstanceFile = currentDirectory+"/src/test/resources/kb2.rdf"
+   val sampleOntologyFile = currentDirectory+"/src/test/resources/vivo_core_ontology.rdf"
+
+   Class.forName("org.h2.Driver")
     val cInfo = new JenaConnectionInfo(url,user,password,dbType)
 
     Jena.truncateAndCreateStore(cInfo)
     Jena.sdbModel(cInfo, "http://vitro.mannlib.cornell.edu/default/vitro-kb-2") { dbModel =>
-      // use the FileManager to find the input file
-      val in = FileManager.get.open(sampleFile)
-
-      // read the RDF/XML file
+      val in = FileManager.get.open(sampleInstanceFile)
+      dbModel.read(in, null);
+    }
+    Jena.sdbModel(cInfo, "http://vitro.mannlib.cornell.edu/filegraph/tbox/vivo-core-1.2.owl") { dbModel =>
+      val in = FileManager.get.open(sampleOntologyFile)
       dbModel.read(in, null);
     }
     println("[DONE]")
