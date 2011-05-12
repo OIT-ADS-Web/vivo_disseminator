@@ -48,6 +48,13 @@ object JenaCache {
     jenaActor ! new SetModel(m)
   }
 
+  def getModel: Option[JModel] = {
+    (jenaActor !? Graph) match {
+      case Some(m: JModel) => Some(m)
+      case _ => None
+    }
+  }
+
   def queryModel(query: String) = {
     val model = jenaActor !? Graph
     model match {

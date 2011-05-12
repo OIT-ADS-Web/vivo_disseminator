@@ -11,14 +11,14 @@ object TestServers {
   val vivoSolr = Solr.solrServer(vivoSolrCfg)
 
   // no longer used
-  // val vivo = new Vivo("jdbc:mysql://localhost:3306/vitrodb","root","","MySQL","com.mysql.jdbc.Driver")
+  //val vivo = new Vivo("jdbc:mysql://localhost:3306/vitrodb","root","","MySQL","com.mysql.jdbc.Driver")
 
   // in memory database - need the DB_CLOSE_DELAY in order for the db to perist across connections
   val url = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1"
   val user = "sa"
   val password = ""
   val dbType = "H2"
-  
+
   val vivo = new Vivo(url,user,password,dbType,"org.h2.Driver")
 
   def loadSampleData = {
@@ -57,5 +57,5 @@ trait SampleLoader extends Specification {
   doBeforeSpec {
     TestServers.loadSampleData
   }
-  
+
 }

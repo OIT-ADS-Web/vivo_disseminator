@@ -7,15 +7,22 @@ import org.apache.solr.common.{SolrInputDocument,SolrDocumentList}
 import org.scardf._
 import org.scardf.Node
 import org.scardf.NodeConverter._
+import org.scardf.jena.JenaGraph
 
 import edu.duke.oit.jena.connection._
 import edu.duke.oit.jena.actor.JenaCache
 import edu.duke.oit.jena.utils._
 
+import com.hp.hpl.jena.sdb.SDBFactory
+import com.hp.hpl.jena.sdb.sql.SDBConnection
+import com.hp.hpl.jena.query._
+import com.hp.hpl.jena.rdf.model.{Model => JModel, ModelFactory}
+
 // use scala collections with java iterators
 import scala.collection.JavaConversions._
 
 class Vivo(url: String, user: String, password: String, dbType: String, driver: String) {
+//class Vivo(sdbConnection: SDBConnection) {
   def initializeJenaCache() = {
     Class.forName(driver)
     JenaCache.setFromDatabase(new JenaConnectionInfo(url,user,password,dbType),
@@ -23,17 +30,37 @@ class Vivo(url: String, user: String, password: String, dbType: String, driver: 
   }
 
   def queryJenaCache(sparql: String) = {
+    JenaCache.getModel match {
+      case Some(m: JModel) => true
+      case _ => initializeJenaCache()
+    }
     JenaCache.queryModel(sparql)
   }
 
-  // TODO: make select choose between cached/non-cached based on configuration
-  def select(sparql: String) = {
-    queryJenaCache(sparql)
+  def queryLive(sparql: String) = {
+    val sdbConnection = new SDBConnection(url,user,password)
+    try {
+      val ds = DatasetFactory.create(SDBFactory.connectDataset(sdbConnection,Jena.storeDesc(Some(dbType))))
+      val kb2 = ds.getNamedModel("http://vitro.mannlib.cornell.edu/default/vitro-kb-2")
+      val owl = ds.getNamedModel("http://vitro.mannlib.cornell.edu/filegraph/tbox/vivo-core-1.2.owl")
+      val queryModel = ModelFactory.createUnion(kb2,owl)
+      try {
+        new JenaGraph(queryModel).select(sparql)
+      } finally { ds.close() }
+    } finally { sdbConnection.close() }
   }
 
-  def numPeople = asInt(select(sparqlPrefixes + """
+  def select(sparql: String, useCache: Boolean = false) = {
+    if (useCache) {
+      queryJenaCache(sparql)
+    } else {
+      queryLive(sparql)
+    }
+  }
+
+  def numPeople(useCache: Boolean = false) = asInt(select(sparqlPrefixes + """
     select (count(?p) as ?numPeople) where { ?p rdf:type core:FacultyMember }
-  """)(0)('numPeople).asInstanceOf[NodeFromGraph])
+  """,useCache)(0)('numPeople).asInstanceOf[NodeFromGraph])
 
   def sparqlPrefixes: String = """
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -59,15 +86,12 @@ class Vivo(url: String, user: String, password: String, dbType: String, driver: 
 
 class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
 
-  def indexPeople() = {
-   // TODO: remove next line, and only use vivo.select - hardcoding now for dev purposes 
-   // vivo.select should have cached/live argument and vivo instance should know whether to init or not
-    vivo.initializeJenaCache()
+  def indexPeople(useCache: Boolean = true) = {
     val peopleUris = vivo.select(vivo.sparqlPrefixes + """
       select ?person where { ?person rdf:type core:FacultyMember }
-      """).map(_('person))
+      """,useCache).map(_('person))
     for (p <- peopleUris) {
-      PersonIndexer.index(p.toString.replaceAll("<|>",""),vivo,solr)
+      PersonIndexer.index(p.toString.replaceAll("<|>",""),vivo,solr,useCache=true)
     }
     solr.commit()
   }
@@ -80,9 +104,8 @@ class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
     docs.map {doc => reindexPerson(doc.getFieldValue("id").asInstanceOf[String])}
   }
 
-  def reindexPerson(uri: String) = {
-    vivo.initializeJenaCache
-    PersonIndexer.index(uri, vivo, solr)
+  def reindexPerson(uri: String,useCache:Boolean=false) = {
+    PersonIndexer.index(uri, vivo, solr,useCache)
     solr.commit
   }
 
@@ -94,7 +117,7 @@ class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
 
 object PersonIndexer extends SimpleConversion {
 
-  def index(uri: String,vivo: Vivo,solr: SolrServer) = {
+  def index(uri: String,vivo: Vivo,solr: SolrServer,useCache: Boolean = false) = {
     val query = vivo.sparqlPrefixes + """
     SELECT *
     WHERE {
@@ -103,7 +126,7 @@ object PersonIndexer extends SimpleConversion {
       <"""+uri+"""> rdfs:label ?name .
     }
     """
-    val personData = vivo.select(query)
+    val personData = vivo.select(query,useCache)
     if (personData.size > 0) {
     val pubSparql = vivo.sparqlPrefixes + """
        select *
@@ -130,7 +153,7 @@ object PersonIndexer extends SimpleConversion {
        }
      """
 
-     val publicationData = vivo.select(pubSparql)
+     val publicationData = vivo.select(pubSparql,useCache)
 
    val pubs: List[Publication] = publicationData.map( pub => new Publication(uri      = getString(pub('publication)).replaceAll("<|>",""),
                                                                              vivoType = getString(pub('type)).replaceAll("<|>",""),
@@ -150,7 +173,7 @@ object PersonIndexer extends SimpleConversion {
      }
    """
 
-   val grantData = vivo.select(grantSparql)
+   val grantData = vivo.select(grantSparql,useCache)
 
    val grants: List[Grant] = grantData.map(grant => new Grant(uri      = getString(grant('agreement)).replaceAll("<|>",""),
                                                               vivoType = getString(grant('type)).replaceAll("<|>",""),
@@ -169,7 +192,7 @@ object PersonIndexer extends SimpleConversion {
      }
    """
 
-   val courseData = vivo.select(courseSparql)
+   val courseData = vivo.select(courseSparql,useCache)
 
    val courses: List[Course] = courseData.map(course => new Course(uri      = getString(course('course)).replaceAll("<|>",""),
                                                                    vivoType = getString(course('type)).replaceAll("<|>",""),
@@ -196,7 +219,7 @@ object PersonIndexer extends SimpleConversion {
     Option(extraItems.map(kvp => (kvp._1.name -> getString(kvp._2))))
   }
 
-  def getAuthors(pubURI: String, vivo: Vivo): List[String] = {
+  def getAuthors(pubURI: String, vivo: Vivo,useCache:Boolean = false): List[String] = {
     val authorData = vivo.select(vivo.sparqlPrefixes + """
      select ?authorName ?rank
      where {
@@ -205,7 +228,7 @@ object PersonIndexer extends SimpleConversion {
        ?author rdfs:label ?authorName .
        OPTIONAL { ?authorship core:authorRank ?rank }
      }
-    """)
+    """,useCache)
     val authorsWithRank = authorData.map(a => (getString(a('authorName)),getString(a.getOrElse('rank, Node.from("0"))))).distinct
     authorsWithRank.sortWith((a1,a2) => (a1._2.toInt < a2._2.toInt)).map(_._1)
   }

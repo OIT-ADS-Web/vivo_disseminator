@@ -15,13 +15,12 @@ class VivoSolrIndexerSpec extends Specification with SampleLoader {
   "A Vivo Solr Indexer" should {
 
     solrSrv.deleteByQuery("*:*")
-    vivo.initializeJenaCache()
 
     val vsi = new VivoSolrIndexer(vivo, solrSrv)
 
     "be connected to a vivo server with more than 0 people" in {
       // guard against running tests with bad db
-      vivo.numPeople must be_> (0)
+      vivo.numPeople() must be_> (0)
     } tag ("focus")
 
     "create a document in the index for each person in vivo with their uri as the id and a json serialization in the 'json' field" in {
@@ -42,7 +41,7 @@ class VivoSolrIndexerSpec extends Specification with SampleLoader {
     } tag ("focus")
 
     "update the indexed document for an individual" in {
-      vsi.indexPeople
+      vsi.indexPeople()
       val people = vivo.select(vivo.sparqlPrefixes + """
         select ?p where { ?p rdf:type core:FacultyMember }
       """)
