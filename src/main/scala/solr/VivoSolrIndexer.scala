@@ -21,6 +21,8 @@ import com.hp.hpl.jena.rdf.model.{Model => JModel, ModelFactory}
 // use scala collections with java iterators
 import scala.collection.JavaConversions._
 
+import akka.util._
+
 class Vivo(url: String, user: String, password: String, dbType: String, driver: String) {
 //class Vivo(sdbConnection: SDBConnection) {
   def initializeJenaCache() = {
@@ -84,7 +86,11 @@ class Vivo(url: String, user: String, password: String, dbType: String, driver: 
   """
 }
 
+
+
 class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
+
+  val logger = Logger(classOf[VivoSolrIndexer])
 
   def indexPeople(useCache: Boolean = true) = {
     val peopleUris = vivo.select(vivo.sparqlPrefixes + """
@@ -97,16 +103,31 @@ class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
   }
 
   def reindexUri(uri: String) = {
+    vivo.initializeJenaCache
     var query = new SolrQuery();
-    query.setQuery( "json:" + uri )
+    query.setQuery( "json:\"" + uri + "\"*" )
+    println(">> reindexUri query [" + query.toString + "]")
     var rsp = solr.query( query )
+    println(">>> " + rsp)
     val docs = rsp.getResults()
+    println( ">>> doc count: " + docs.size)
     docs.map {doc => reindexPerson(doc.getFieldValue("id").asInstanceOf[String])}
   }
 
   def reindexPerson(uri: String,useCache:Boolean=false) = {
-    PersonIndexer.index(uri, vivo, solr,useCache)
+    logger.debug("reindex person: " + uri)
+    println("reindex person: " + uri)
+    PersonIndexer.index(uri, vivo, solr, useCache)
     solr.commit
+  }
+
+  def testSearch(queryStr: String) = {
+    var query = new SolrQuery();
+    query.setQuery( queryStr )
+    var rsp = solr.query( query )
+    val docs = rsp.getResults()
+    println( ">>> doc count: " + docs.size)
+    docs.map {doc => doc.getFieldValue("id").asInstanceOf[String]}
   }
 
   def getPerson(uri: String): Option[Person] = {

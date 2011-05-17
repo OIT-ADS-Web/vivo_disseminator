@@ -34,6 +34,7 @@ object IndexUpdater {
 
     // configure the broker
     bService.addConnector(uri)
+    bService.start
 
     bService
   }
