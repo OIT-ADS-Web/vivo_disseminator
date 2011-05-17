@@ -112,6 +112,16 @@ class ExtraItems(extraItems:Option[Map[String, String]]) extends ToMethods with 
     }
   }
 
+  def urls():List[String] = {
+    extraItems match {
+      case Some(eitems) => {
+        val l = for (i <- eitems if i._2.startsWith("http")) yield i._2
+        l.toList
+      }
+      case _ => List()
+    }
+  }
+
 }
 
 
@@ -121,6 +131,12 @@ case class Publication(uri:String,
                        authors:List[String],
                        extraItems:Option[Map[String, String]]) 
      extends ExtraItems(extraItems) with AddToJson
+{
+
+  override def urls() = {
+    uri :: super.urls // new ExtraItems(extraItems).urls
+  }
+}
 
 case class Person(uri:String,
                   vivoType:String,

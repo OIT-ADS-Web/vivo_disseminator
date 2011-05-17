@@ -106,17 +106,13 @@ class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
     vivo.initializeJenaCache
     var query = new SolrQuery();
     query.setQuery( "json:\"" + uri + "\"*" )
-    println(">> reindexUri query [" + query.toString + "]")
     var rsp = solr.query( query )
-    println(">>> " + rsp)
     val docs = rsp.getResults()
-    println( ">>> doc count: " + docs.size)
     docs.map {doc => reindexPerson(doc.getFieldValue("id").asInstanceOf[String])}
   }
 
   def reindexPerson(uri: String,useCache:Boolean=false) = {
     logger.debug("reindex person: " + uri)
-    println("reindex person: " + uri)
     PersonIndexer.index(uri, vivo, solr, useCache)
     solr.commit
   }
@@ -126,7 +122,6 @@ class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
     query.setQuery( queryStr )
     var rsp = solr.query( query )
     val docs = rsp.getResults()
-    println( ">>> doc count: " + docs.size)
     docs.map {doc => doc.getFieldValue("id").asInstanceOf[String]}
   }
 
@@ -149,90 +144,91 @@ object PersonIndexer extends SimpleConversion {
     """
     val personData = vivo.select(query,useCache)
     if (personData.size > 0) {
-    val pubSparql = vivo.sparqlPrefixes + """
-       select *
-       where {
-         <"""+uri+"""> core:authorInAuthorship ?authorship .
-         ?publication core:informationResourceInAuthorship ?authorship .
-         ?publication rdfs:label ?title .
-         ?publication rdf:type ?type .
-         OPTIONAL {
+      val pubSparql = vivo.sparqlPrefixes + """
+      
+      select *
+      where {
+        <"""+uri+"""> core:authorInAuthorship ?authorship .
+        ?publication core:informationResourceInAuthorship ?authorship .
+        ?publication rdfs:label ?title .
+        ?publication rdf:type ?type .
+        OPTIONAL {
            ?publication rdf:type ?otherType .
            ?otherType rdfs:subClassOf ?type .
            FILTER(?otherType != ?type)
-         }
-         FILTER(!BOUND(?otherType) && ?type != owl:Thing)
-         OPTIONAL { ?publication bibo:numPages ?numPages . }
-         OPTIONAL { ?publication bibo:edition ?edition . }
-         OPTIONAL { ?publication bibo:volume ?volume . }
-         OPTIONAL { ?publication bibo:issue ?issue . }
-         OPTIONAL { ?publication core:hasPublicationVenue ?publicationVenue . ?publicationVenue rdfs:label ?publishedIn . }
-         OPTIONAL { ?publication core:publisher ?publisher. ?publisher rdfs:label ?publishedBy . }
-         OPTIONAL { ?publication bibo:pageStart ?startPage .}
-         OPTIONAL { ?publication bibo:pageEnd ?endPage .}
-         OPTIONAL { ?publication core:dateTimeValue ?datetime . ?datetime core:dateTime ?year .}
-       }
-     """
+        }
+        FILTER(!BOUND(?otherType) && ?type != owl:Thing)
+        OPTIONAL { ?publication bibo:numPages ?numPages . }
+        OPTIONAL { ?publication bibo:edition ?edition . }
+        OPTIONAL { ?publication bibo:volume ?volume . }
+        OPTIONAL { ?publication bibo:issue ?issue . }
+        OPTIONAL { ?publication core:hasPublicationVenue ?publicationVenue . ?publicationVenue rdfs:label ?publishedIn . }
+        OPTIONAL { ?publication core:publisher ?publisher. ?publisher rdfs:label ?publishedBy . }
+        OPTIONAL { ?publication bibo:pageStart ?startPage .}
+        OPTIONAL { ?publication bibo:pageEnd ?endPage .}
+        OPTIONAL { ?publication core:dateTimeValue ?datetime . ?datetime core:dateTime ?year .}
+      }
+      """
 
-     val publicationData = vivo.select(pubSparql,useCache)
+      val publicationData = vivo.select(pubSparql,useCache)
 
-   val pubs: List[Publication] = publicationData.map( pub => new Publication(uri      = getString(pub('publication)).replaceAll("<|>",""),
-                                                                             vivoType = getString(pub('type)).replaceAll("<|>",""),
-                                                                             title    = getString(pub('title)),
-                                                                             authors  = getAuthors(getString(pub('publication)).replaceAll("<|>",""),vivo),
-                                                                             extraItems = parseExtraItems(pub,List('publication,'type,'title)))).asInstanceOf[List[Publication]]
+      val pubs: List[Publication] = publicationData.map( pub => new Publication(uri      = getString(pub('publication)).replaceAll("<|>",""),
+                                                                                vivoType = getString(pub('type)).replaceAll("<|>",""),
+                                                                                title    = getString(pub('title)),
+                                                                                authors  = getAuthors(getString(pub('publication)).replaceAll("<|>",""),vivo),
+                                                                                extraItems = parseExtraItems(pub,List('publication,'type,'title)))).asInstanceOf[List[Publication]]
 
-   val grantSparql = vivo.sparqlPrefixes + """
-     select  *
-     where {
-       <"""+uri+"""> core:hasResearcherRole ?role .
-       ?role rdfs:label ?roleName .
-       ?role core:roleIn ?agreement .
-       ?agreement rdf:type ?type .
-       ?agreement rdfs:label ?grantName .
-       FILTER(?type = core:Grant)
-     }
-   """
+      val grantSparql = vivo.sparqlPrefixes + """
+      select  *
+      where {
+        <"""+uri+"""> core:hasResearcherRole ?role .
+        ?role rdfs:label ?roleName .
+        ?role core:roleIn ?agreement .
+        ?agreement rdf:type ?type .
+        ?agreement rdfs:label ?grantName .
+        FILTER(?type = core:Grant)
+      }
+      """
 
-   val grantData = vivo.select(grantSparql,useCache)
+      val grantData = vivo.select(grantSparql,useCache)
 
-   val grants: List[Grant] = grantData.map(grant => new Grant(uri      = getString(grant('agreement)).replaceAll("<|>",""),
-                                                              vivoType = getString(grant('type)).replaceAll("<|>",""),
-                                                              name     = getString(grant('grantName)),
-                                                              extraItems = parseExtraItems(grant,List('agreement,'type,'grantName)))).asInstanceOf[List[Grant]]
+      val grants: List[Grant] = grantData.map(grant => new Grant(uri      = getString(grant('agreement)).replaceAll("<|>",""),
+                                                                 vivoType = getString(grant('type)).replaceAll("<|>",""),
+                                                                 name     = getString(grant('grantName)),
+                                                                 extraItems = parseExtraItems(grant,List('agreement,'type,'grantName)))).asInstanceOf[List[Grant]]
 
-   val courseSparql = vivo.sparqlPrefixes + """
-     select  *
-     where {
-       <"""+uri+"""> core:hasTeacherRole ?role .
-       ?role rdfs:label ?roleName .
-       ?role core:roleIn ?course .
-       ?course rdf:type ?type .
-       ?course rdfs:label ?courseName .
-       FILTER(?type = core:Course)
-     }
-   """
+      val courseSparql = vivo.sparqlPrefixes + """
+      select  *
+      where {
+        <"""+uri+"""> core:hasTeacherRole ?role .
+        ?role rdfs:label ?roleName .
+        ?role core:roleIn ?course .
+        ?course rdf:type ?type .
+        ?course rdfs:label ?courseName .
+        FILTER(?type = core:Course)
+      }
+      """
 
-   val courseData = vivo.select(courseSparql,useCache)
+      val courseData = vivo.select(courseSparql,useCache)
 
-   val courses: List[Course] = courseData.map(course => new Course(uri      = getString(course('course)).replaceAll("<|>",""),
-                                                                   vivoType = getString(course('type)).replaceAll("<|>",""),
-                                                                   name     = getString(course('courseName)),
-                                                                   extraItems = parseExtraItems(course,List('course,'type,'courseName)))).asInstanceOf[List[Course]]
+      val courses: List[Course] = courseData.map(course => new Course(uri      = getString(course('course)).replaceAll("<|>",""),
+                                                                      vivoType = getString(course('type)).replaceAll("<|>",""),
+                                                                      name     = getString(course('courseName)),
+                                                                      extraItems = parseExtraItems(course,List('course,'type,'courseName)))).asInstanceOf[List[Course]]
 
-    val p = new Person(uri,
-                       vivoType = getString(personData(0)('type)).replaceAll("<|>",""),
-                       name     = getString(personData(0)('name)),
-                       title    = getString(personData(0)('title)),
-                       publications = pubs,
-                       grants = grants,
-                       courses = courses,
-                       extraItems = parseExtraItems(personData(0),List('type,'name,'title)))
-    val solrDoc = new SolrInputDocument()
-    solrDoc.addField("id",p.uri)
-    solrDoc.addField("json",p.toJson)
-    solr.add(solrDoc)
-  }
+      val p = new Person(uri,
+                         vivoType = getString(personData(0)('type)).replaceAll("<|>",""),
+                         name     = getString(personData(0)('name)),
+                         title    = getString(personData(0)('title)),
+                         publications = pubs,
+                         grants = grants,
+                         courses = courses,
+                         extraItems = parseExtraItems(personData(0),List('type,'name,'title)))
+      val solrDoc = new SolrInputDocument()
+      solrDoc.addField("id",p.uri)
+      solrDoc.addField("json",p.toJson)
+      solr.add(solrDoc)
+    }
   }
 
   def parseExtraItems(resultMap: Map[QVar,Node], requiredKeys: List[QVar]): Option[Map[String,String]] = {
