@@ -105,7 +105,7 @@ class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
   def reindexUri(uri: String) = {
     vivo.initializeJenaCache
     var query = new SolrQuery();
-    query.setQuery( "json:\"" + uri + "\"*" )
+    query.setQuery( "uris:\"" + uri + "\"" )
     var rsp = solr.query( query )
     val docs = rsp.getResults()
     docs.map {doc => reindexPerson(doc.getFieldValue("id").asInstanceOf[String])}
@@ -227,6 +227,7 @@ object PersonIndexer extends SimpleConversion {
       val solrDoc = new SolrInputDocument()
       solrDoc.addField("id",p.uri)
       solrDoc.addField("json",p.toJson)
+      p.uris.map {uri => solrDoc.addField("uris",uri)}
       solr.add(solrDoc)
     }
   }
