@@ -47,8 +47,7 @@ class SolrModelSpec extends Specification {
 
   "The Person Object" should {
 
-    "find an indexed person by uri and return some person instance" in {
-      val testPersonJson = """
+    val testPersonJson = """
         {
           "uri": "http://vivo.duke.edu/person1",
           "name" : "Smith J",
@@ -62,12 +61,16 @@ class SolrModelSpec extends Specification {
               "authors": ["Lawrence GL","Smith J"],
               "extraItems": {
                 "issue": "13",
-                "year": "2005"
+                "year": "2005",
+                "other_uri": "http://vivo.duke.edu/test2323423"
               }
             }
           ]
         }
-      """
+    """
+    
+    // "
+    "find an indexed person by uri and return some person instance" in {
 
       val doc1 = new SolrInputDocument()
       doc1.addField("id","http://vivo.duke.edu/person1")
@@ -83,6 +86,18 @@ class SolrModelSpec extends Specification {
 
     "not find a non-indexed person and return None" in {
       Person.find("no_chance_this_has_been_indexed",widgetSolr) must_== None
+    }
+
+    "know all of its URIs" in {
+      val person = PersonExtraction(testPersonJson)
+      person.uris must_== List("http://vivo.duke.edu/person1",
+                               "http://vivo.duke.edu/test1",
+                               "http://vivo.duke.edu/test2323423")
+    }
+
+    "contain the uri that matches a value in the extra items that starts with \"http\"" in {
+      val person = PersonExtraction(testPersonJson)
+      person.uris.contains("http://vivo.duke.edu/test2323423") must_== true
     }
   }
 }
