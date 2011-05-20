@@ -97,7 +97,7 @@ class VivoSolrIndexer(vivo: Vivo, solr: SolrServer) {
       select ?person where { ?person rdf:type core:FacultyMember }
       """,useCache).map(_('person))
     for (p <- peopleUris) {
-      PersonIndexer.index(p.toString.replaceAll("<|>",""),vivo,solr,useCache=true)
+      PersonIndexer.index(p.toString.replaceAll("<|>",""),vivo,solr,useCache)
     }
     solr.commit()
   }
@@ -175,7 +175,7 @@ object PersonIndexer extends SimpleConversion {
       val pubs: List[Publication] = publicationData.map( pub => new Publication(uri      = getString(pub('publication)).replaceAll("<|>",""),
                                                                                 vivoType = getString(pub('type)).replaceAll("<|>",""),
                                                                                 title    = getString(pub('title)),
-                                                                                authors  = getAuthors(getString(pub('publication)).replaceAll("<|>",""),vivo),
+                                                                                authors  = getAuthors(getString(pub('publication)).replaceAll("<|>",""),vivo,useCache),
                                                                                 extraItems = parseExtraItems(pub,List('publication,'type,'title)))).asInstanceOf[List[Publication]]
 
       val grantSparql = vivo.sparqlPrefixes + """
